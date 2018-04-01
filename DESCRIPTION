@@ -1,0 +1,11 @@
+Package: lisst
+Title: Functions for manipulation of the Laser In-Situ Scattering and Transmissometry (LISST) data
+Version: 0.0.0.9000
+Authors@R: person("Alexandre", "Castagna", email = "alexandre.castagna@ugent.be", role = c("aut", "cre"))
+Description: An R package to read, manipulate and visualize data from the Laser In-Situ Scattering and Transmissometry (LISST) instruments, Sequoia Scientific, Inc.
+Depends: R (>= 3.3.3)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports: units
+RoxygenNote: 6.0.1

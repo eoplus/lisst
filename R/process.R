@@ -1,17 +1,18 @@
 # TODO
 # add an subset and apply function that preserves structure, units and attributes.
 
-lgdate <- function(lraw, yr) {
+#' @export
 
-	if(!is(lraw, "lisst"))
-		stop("lraw must be a lisst object", call. = FALSE)
-	if(!(attr(lraw, "type") == "raw" || attr(lraw, "type") == "cor"))
-		stop("lraw must be a lisst object of type raw or cor", call. = FALSE)
+lgdate <- function(lo, yr) {
+	if(!is(lo, "lisst"))
+		stop("lo must be a lisst object", call. = FALSE)
+	typ <- attr(lo, "type")
+	if((typ == "cal" || typ == "vol" || typ == "pnc") && (sum(names(lo) == "Time") > 0))
+		return(lo[, "Time"])
 
-	if(attr(lraw, "linst")$mod == "100") {
-		julian <- floor(lraw[, 39] / 100)
-
-		if(missing(yr)) {
+	if(attr(lo, "linst")$mod == "100") {
+		julian <- floor(lo[, 39] / 100)
+		if(missing(yr) || is.null(yr)) {
 			ct <- Sys.time()
 			cj <- as.numeric(format(ct, "%j"))
 			yr <- as.numeric(format(ct, "%Y"))
@@ -24,38 +25,39 @@ lgdate <- function(lraw, yr) {
 					"julian dates", call. = FALSE)
 			}
 		}
-
 		id <- which(diff(julian) <= -364)
-        	yr <- rep(yr, nrow(lraw))
+        	yr <- rep(yr, nrow(lo))
 		if(length(id) > 0)
 			for(i in 1:length(id)) {
 				yr[id[i]:length(yr)] <- yr[id[i]:length(yr)]+1
 			}
-		hour   <- round(((lraw[, 39] / 100) - julian) * 100)
-		min    <- floor(lraw[, 40] / 100)
-        	sec    <- round(((lraw[, 40] / 100) - min) * 100)
+		hour   <- round(((lo[, 39] / 100) - julian) * 100)
+		min    <- floor(lo[, 40] / 100)
+        	sec    <- round(((lo[, 40] / 100) - min) * 100)
         	dates  <- as.POSIXct(paste(yr, julian, hour, min, sec, sep = "-"), 
 			format = "%Y-%j-%H-%M-%S")
 		return(dates)
 	}
 
-	if(attr(lraw, "linst")$mod == "200") {
+	if(attr(lo, "linst")$mod == "200") {
 		cat("To be added soon...")
 	}
 }
 
 
 
-#' Retrieve the Particle Volume Scattering Function (VSF) from calibrated LISST data
+#' Retrieve the Particle Volume Scattering Function (VSF) from calibrated LISST 
+#' data.
 #'
 #' @param lcal object of class lisst and type cal.
 #'
-#' References:
+#' @references
 #'
-# Agrawal, Yogesh C. 2005. The optical volume scattering function: Temporal and vertical 
-# variability in the water column off the New Jersey coast. Limnology and Oceanography 50, 6, 
-# 1787-1794. DOI: 10.4319/lo.2005.50.6.1787
-#
+#' Agrawal, Yogesh C. 2005. The optical volume scattering function: Temporal and 
+#' vertical variability in the water column off the New Jersey coast. Limnology 
+#' and Oceanography 50, 6, 1787-1794. DOI: 10.4319/lo.2005.50.6.1787
+#'
+#' @export
 
 getvsf <- function(lcal) {
 
