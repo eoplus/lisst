@@ -152,9 +152,16 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 
 lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl, yr) {
 
-	if(lmodl$mod == "100") lo <- read.table(fl, header = FALSE)
-	if(lmodl$mod == "200") lo <- read.csv(fl, header = FALSE)
-
+	if(lmodl$mod == "100") {
+                if(length(grep("_rs", fl)) > 0) ity <- "rs"
+		else ity <- "ss"
+		lo <- read.table(fl, header = FALSE)
+	}
+	if(lmodl$mod == "200") {
+                if(length(grep("_rs", fl)) > 0) ity <- "rs"
+		else ity <- "ss"		
+		lo <- read.csv(fl, header = FALSE)
+	}
 	lo <- as.data.frame(lo)
 	colnames(lo) <- lmodl$lvarn
 	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * as.numeric(lmodl$pl / pl)
@@ -166,6 +173,7 @@ lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl, yr) {
 			zscatd <- as.numeric(read.table(zscat)[, 1])
 	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
+	linst$ity <- ity
 	attr(lo, "sn")    <- sn
 	attr(lo, "type")  <- "vol"
 	attr(lo, "linst") <- linst

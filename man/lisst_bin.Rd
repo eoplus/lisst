@@ -4,7 +4,7 @@
 \alias{lisst_bin}
 \title{Read a LISST binary file}
 \usage{
-lisst_bin(fl, zscat, sn, pl, out)
+lisst_bin(fl, sn, pl, zscat, linst, lmodl)
 }
 \description{
 Read a LISST binary file for the registered instruments of supported models. 

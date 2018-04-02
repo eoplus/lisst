@@ -4,7 +4,7 @@
 \alias{lisst_pro}
 \title{Read a LISST processed file}
 \usage{
-lisst_pro(fl, sn, pl, zscat)
+lisst_pro(fl, sn, pl, zscat, linst, lmodl, yr)
 }
 \description{
 Read a LISST processed file for the registered instruments of supported 
