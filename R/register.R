@@ -133,7 +133,8 @@ lisst_reg <- function(model, path) {
 
 .LISSTm <- list(
 	"100"  = list(
-		pl = units::set_units(0.05, m), 
+		mod   = "100",
+		pl    = units::set_units(0.05, m), 
 		bnvar = 40, 
 		anvar = 42, 
 		nring = 32, 
@@ -142,7 +143,7 @@ lisst_reg <- function(model, path) {
 			B = units::set_units(c(ss = 1.25, rs = 1.0), µm), 
 			C = units::set_units(c(ss = 2.50, rs = 1.9), µm)
 		),
-		lvarn = c(paste("Bin", formatC(1:32, width = 2, flag = 0), sep = "_"),"Laser transmission","Battery voltage","External input 1","Laser Reference","Depth","Temperature","Time1","Time2","Optical transmission","Beam attenuation"),
+		lvarn = c(paste("Bin", formatC(1:32, width = 2, flag = 0), sep = "_"),"Laser transmission","Battery voltage","External input 1","Laser reference","Depth","Temperature","Time1","Time2","Optical transmission","Beam attenuation"),
 		varun = c(rep("ppm", 32), "mW", "V", "V", "mW", "m", "`°C`", "1", "1", "1", "1/m"),
 		wang = list(
 			B = units::set_units(matrix(c(
@@ -184,7 +185,8 @@ lisst_reg <- function(model, path) {
 		)
 	), 
 	"200"  = list(
-		pl = units::set_units(0.025, m), 
+		mod   = "200",
+		pl    = units::set_units(0.025, m), 
 		bnvar = 59, 
 		anvar = 61, 
 		nring = 36, 
@@ -192,7 +194,7 @@ lisst_reg <- function(model, path) {
 		s0 = list(
 			A = units::set_units(c(ss = 1.00, rs = 1.00), µm)
 		),
-		lvarn = c(paste("Bin", formatC(1:36, width = 2, flag = 0), sep = "_"),"Laser transmission","Battery voltage","External input 1","Laser Reference","Depth","Temperature","Year","Month","Day","Hour","Minute","Second","External input 2","Mean Diameter","Total Volume Concentration","Relative Humidity", "Accelerometer X", "Accelerometer Y", "Accelerometer Z", "Raw pressure 1","Raw pressure 2","Ambient Light", "NU", "Optical transmission","Beam attenuation"),
+		lvarn = c(paste("Bin", formatC(1:36, width = 2, flag = 0), sep = "_"),"Laser transmission","Battery voltage","External input 1","Laser reference","Depth","Temperature","Year","Month","Day","Hour","Minute","Second","External input 2","Mean Diameter","Total Volume Concentration","Relative Humidity", "Accelerometer X", "Accelerometer Y", "Accelerometer Z", "Raw pressure 1","Raw pressure 2","Ambient Light", "NU", "Optical transmission","Beam attenuation"),
 		varun = c(rep("ppm", 36), "mW", "V", "V", "mW", "m", "`°C`", "1", "1", "1", "hr", "min", "s", "V", "µm", "ppm", "`%`", "1", "1", "1", "1", "1", "1", "1", "1", "1/m"),
 		wang = list(
 			A = NULL
