@@ -102,7 +102,6 @@ lisst_reg <- function(model, path) {
 #' For the LISST-100 series, extract only the relevant model information for the 
 #' detector type.
 #'
-#' @export
 
 .getmodp <- function(linst) {
 	lmodl      <- .LISSTm[[linst$mod]]
@@ -221,7 +220,7 @@ lisst_reg <- function(model, path) {
 
 .LISSTi <- list()
 
-save(.LISSTm, .LISSTi, file = "R/sysdata.rda")
+save(.LISSTm, .LISSTi, file = system.file("R", "sysdata.rda", package = "lisst"))
 
 #' @import units
 

@@ -7,31 +7,37 @@
 #' @param fl    Path to binary file (e.g., *.DAT in the LISST-100(X)).
 #' @param zscat Path to ASCII background data file for LISST-100(X) (e.g., 
 #'              *.asc). Ignored for LISST-200X.
-#' @param pl    Path length in meters. If not provided the system will assumed 
+#' @param pl    Path length in meters. If not provided the function will assume 
 #'              standard path length for the instrument model, i.e., no path 
 #'              reduction module in use.
 #' @param sn    Serial number of the instrument.
 #' @param yr    The year of first measurement in the data file. Only necessary 
 #'              for LISST-100(X).
-#' @param out   The output format. Valid options are 'vol', 'psd', 'raw', 'cor' 
+#' @param out   The output format. Valid options are 'vol', 'pnc', 'raw', 'cor' 
 #'              and 'cal'. See details.
 #'
 #' @details The function will determine the file type based on its extenssion. 
-#' Processed files outputed from LISST SOP for the LISST-100(X) have extension 
+#' Processed files created from LISST SOP for the LISST-100(X) have extension 
 #' .asc and from LISST-200X, extension .csv. Binary files have extension .DAT 
 #' and RBN for LISST-100(X) and LISST-200X, respectivelly.
 #'
 #' The level of processing will depend on the output requested by the 
-#' user. For processed LISST files as outputed by the LISST SOP the volume 
+#' user. For processed LISST files as creayed by the LISST SOP, the volume 
 #' concentration ('vol', ppm) or the particle number concentration ('pnc', 
 #' 1/L/µm) can be returned. For binary files, the raw digital counts ('raw'), 
 #' the corrected digital counts ('cor') or the calibrated values ('cal') can be
 #' returned. Corrected digital counts are the digital counts of the ring 
 #' detectors de-attenuated, background corrected and compensated for ring area 
-#' deviations from ideal log increase behaivour. All other parameters are in 
-#' 'cor' are kept at digital counts. Finally, for 'cal', all parameters are 
-#' converted to physical units using the calibration constants registered with 
-#' \code{lisst_reg} for the instrument serial number. 
+#' deviations from ideal log increase behaivour. All other parameters in 'cor' 
+#' are kept at the original digital counts. Finally, for 'cal', all parameters 
+#' are converted to physical units using the calibration constants registered 
+#' with \code{lisst_reg} for the instrument serial number. In addition, types 
+#' 'cal','vol' and 'pnc' return an extra column, with dates/times converted to 
+#' POSIXct format.
+#'
+#' To allow easier manipulation, conversion between types, and plotting, all 
+#' associated information for the instrument and model are saved as attributes 
+#' in the returned object.
 #'
 #' @return A lisst object with attribute type according to the processing level 
 #' requested. 
