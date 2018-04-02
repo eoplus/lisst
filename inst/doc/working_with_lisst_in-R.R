@@ -13,7 +13,7 @@ yr    <- 2018
 zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
 
 # For a processed file:
-flp   <- system.file("extdata", "DN_27.asc", package = "lisst")
+flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
 lop   <- read_lisst(flp, sn, pl, zscat, yr)
 
 # For a binary file:
@@ -37,10 +37,14 @@ lob[15, 1:3, drop = FALSE]
 lgetvsf(lob)[15, 1:3, drop = FALSE]
 
 ## ------------------------------------------------------------------------
+# Extract the Junge slope for a PSD:
+lgetfit(lop)[15:17]
+
+## ------------------------------------------------------------------------
 lov <- lgetvsf(lob)
 par(mfcol = c(2, 2))
 plot(lov[40:144, ])
-plot(lov[40:144, ], type = "pf")
-plot(lov[40:144, ], xu = "degree")
-plot(lov[40:144, ], xu = "degree", type = "pf")
+plot(lop[40:144, ], type = 'pnc')
+plot(lov[40:144, ], type = 'pf', xu = 'degree')
+plot(lop[40:144, ], type = 'vol')
 
