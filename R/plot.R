@@ -21,6 +21,9 @@ plot.lisst <- function(lo, xu, type, ...) {
 		if(length(id) > 0) y <- y[-id, ]
 		if(type == "pf") {
 			cp <- lo[, "Beam attenuation"]
+			aw670 <- units::set_units(0.439, 1/m)
+			bw670 <- units::set_units(0.0005808404, 1/m)
+			cp <- cp - ((aw670 + bw670) * as.numeric(lmodl$pl))
 			if(length(id) > 0) cp <- cp[-id, ]
 			y <- y / cp
 			plot.vsf(x, y, pf = TRUE, ...)

@@ -291,10 +291,10 @@ lgdate <- function(lo, yr) {
 			if(julian[1] > cj) {
 				yr <- yr - 1
 				warning("yr not provided; assuming previous year based on",
-					"julian dates", call. = FALSE)
+					" julian dates", call. = FALSE)
 			} else {
 				warning("yr not provided, assuming current year based on", 
-					"julian dates", call. = FALSE)
+					" julian dates", call. = FALSE)
 			}
 		}
 		id <- which(diff(julian) <= -364)

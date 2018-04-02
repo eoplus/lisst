@@ -137,7 +137,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 		if(out == 'cal') lo <- lgetcal(lo, yr)
 		else if(out == 'cor') lo <- lgetcor(lo)
 	} else {
-		lo <- lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl)
+		lo <- lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl, yr)
 		if(out == 'pnc') lo <- lgetpnc(lo)
 	}
 

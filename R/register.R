@@ -89,7 +89,7 @@ lisst_reg <- function(model, path) {
 
 		save(".LISSTi", file = system.file("R", "sysdata.rda", package = "lisst"))
 		assign(".LISSTi", .LISSTi, envir = environment(lisst::lisst_reg))
-		if(.LISSTi[[as.character(dat[1])]]$X) model <- paste0(model, "x")
+		if(.LISSTi[[as.character(dat[1])]]$X) model <- paste0(model, "X")
 		cat("\n")
 		cat(paste0("LISST-", model), paste0("SN:", dat[1]), "successfully registered\n\n")
 	}
