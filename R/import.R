@@ -217,6 +217,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 #' It is not intended to be used directly, but called from \code{read_lisst}.
 
 .lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
+	lmodl$pl <- pl
 	if(lmodl$mod == "100") {
 		lo <- readBin(fl, "integer", n = file.info(fl)$size, size = 1, signed = FALSE, 
 			endian = "little")

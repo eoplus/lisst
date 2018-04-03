@@ -1,5 +1,6 @@
-
 # lisst (in development...)
+
+[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/lisst)](https://cran.r-project.org/package=lisst)
 
 An R package to read, manipulate and visualize data from the Laser In-Situ Scattering and Transmissometry (LISST) instruments, Sequoia Scientific, Inc.
 
