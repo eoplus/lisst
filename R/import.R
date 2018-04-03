@@ -1,55 +1,70 @@
+#' @import units
+NULL
 
 #' Read LISST data
 #'
-#' Read LISST data (processed or binary files) for the registered instruments of
-#' supported models.
+#' Read LISST processed or binary data files. 
 #'
-#' @param fl    Path to processed or binary file (e.g., *.DAT in the 
+#' @param fl    Path to processed or binary file (e.g., *.DAT for the 
 #'              LISST-100(X)).
-#' @param zscat Path to ASCII background data file for LISST-100(X) (e.g., 
-#'              *.asc). Ignored for LISST-200X. Only required when reading 
-#'              binary files.
+#' @param zscat Path to ASCII background data file (e.g., *.asc). This is 
+#'              required for processing binary files, with the exception of out 
+#'		= 'raw'. It is optional for the LISST-200X, if it is desired to  
+#'              process the binary file with a different zscat than the 
+#'              internaly stored.
 #' @param pl    Path length in meters. If not provided the function will assume 
 #'              standard path length for the instrument model (with a warning), 
 #'              i.e., no path reduction module in use.
 #' @param sn    Serial number of the instrument. Optionally, can be omitted when 
-#'              reading a SOP processed file or when out is 'raw' or 'cor' for 
-#'              binary files. In this case, instrument model must be supplied to 
+#'              reading a LISST-SOP processed file or when out = 'raw' (binary 
+#'              files). In this case, instrument model must be supplied to 
 #'              argument model.
 #' @param yr    The year of first measurement in the data file. Only necessary 
 #'              for LISST-100(X). If not provided, function will make a best 
-#'              guess (with a warning) based on the curent date and the julian
-#'              date of first measurement.
-#' @param out   The output format. Valid options are 'vol', 'pnc', 'raw', 'cor' 
-#'              and 'cal'. See details.
+#'              guess (with a warning). See details.
+#' @param out   The output format. Valid options are 'raw', 'cor', 'cal', 'vol' 
+#'              and 'pnc'. See details.
 #' @param model A character vector of the instrument model (e.g. "200" for 
 #'              LISST-200X). For the LISST-100(X), the detector type must be 
-#'              included in the name (e.g., "100C" or "100CX"). Ignored if sn is 
+#'              included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
 #'              provided.
 #'
-#' @details The function will determine the file type based on its extenssion. 
-#' Processed files created from LISST SOP for the LISST-100(X) have extension 
-#' .asc and from LISST-200X, extension .csv. Binary files have extension .DAT 
-#' and RBN for LISST-100(X) and LISST-200X, respectivelly. The extension is also
-#' used to determine 
+#' @details
+#' The function will determine the file type based on its extenssion. Processed 
+#' files created from LISST SOP for the LISST-100(X) have extension .asc and 
+#' for the LISST-200X, extension .csv. Binary files have extension .DAT and .RBN 
+#' for the LISST-100(X) and LISST-200X, respectivelly.
 #'
-#' The level of processing will depend on the output requested by the 
-#' user. For processed LISST files as creayed by the LISST SOP, the volume 
-#' concentration ('vol', ppm) or the particle number concentration ('pnc', 
-#' 1/L/µm) can be returned. For binary files, the raw digital counts ('raw'), 
-#' the corrected digital counts ('cor') or the calibrated values ('cal') can be
-#' returned. Corrected digital counts are the digital counts of the ring 
-#' detectors de-attenuated, background corrected and compensated for ring area 
-#' deviations from ideal log increase behaivour. All other parameters in 'cor' 
-#' are kept at the original digital counts. Finally, for 'cal', all parameters 
-#' are converted to physical units using the calibration constants registered 
-#' with \code{lisst_reg} for the instrument serial number. In addition, types 
-#' 'cal','vol' and 'pnc' return an extra column, with dates/times converted to 
-#' POSIXct format.
+#' The parameter out determine the level of processing of the returned object. 
+#' For binary files out can be 'raw' for the raw digital counts, 'cor' for the 
+#' corrected digital counts or 'cal' for values in calibrated physical units. 
+#' The corrected digital counts are the raw counts de-attenuated for the 
+#' particle extinction, background subtracted and compensated for area 
+#' deviations from nominal values. 'cal' applies the instrument specific 
+#' calibration constants to 'cor' (for all variables). If out is not provided, 
+#' 'cal' will be returned for a binary file input. For processed files, out can 
+#' be 'vol' for the volume concentration (ppm) or 'pnc' for the number 
+#' concentration (1/L/µm). If not provided, 'vol' will be returned for processed
+#' files. As of this version, is not possible to direcly retrieve the particle 
+#' size distribution (PSD) from binary data (inversion model not implemented), 
+#' so 'vol' and 'pnc' can only be selected for processed files. Functions 
+#' \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, \code{lgetvol} and 
+#' \code{lgetpnc} allow to switch between types without need to read from disk. 
 #'
-#' To allow easier manipulation, conversion between types, and plotting, all 
-#' associated information for the instrument and model are saved as attributes 
-#' in the returned object.
+#' A column "Time", with date/time in POSIXct format is added to all created 
+#' objects. If yr is missing when reading a LISST-100(X) file, the function will 
+#' 'guess' its value, by acessing the file system modification date information. 
+#' The modification date is used to be consistent across platforms, since 
+#' UNIX-type systems do not register creation date. Still, those are expceted to 
+#' be equivalent since the files are not expected to be modified since their 
+#' creation by the LISST instrument (binary) or the LISST-SOP (processed). In 
+#' the case of binary file, the year will be then precise for the year of 
+#' \emph{last} measurement and the function will handle it appropriatly. For a 
+#' processed file the logic will break down in cases that the file is processed 
+#' in a different year than the final measurement. If a guess was not correct 
+#' and the user have the approriate information, is possible to directly alter 
+#' the Time column in the lisst object using standard R tools to handle POSIX 
+#' objects as an alternative to call \code{read_lisst} again.
 #'
 #' @return A lisst object with attribute type according to the processing level 
 #' requested. 
@@ -117,8 +132,11 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 		}
 	}
 
+	# It is not setting directly the pl component of lmodl because .lisst_pro
+	# will need to compensate the beam attenuation with a factor based on the 
+	# standard pl of the model. 
 	if(missing(pl)) {
-		warning(paste("pl not provided; assuming standard path length of instrument model"), 
+		warning(paste("pl not provided - assuming standard path length"), 
 			call. = FALSE)
 		pl <- lmodl$pl
 	} else if(units::set_units(pl, m) > lmodl$pl) {
@@ -126,21 +144,29 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			lmodl$pl, " m"), call. = FALSE)
 	}
 
-	if(missing(yr)) yr <- NULL
+	guess <- FALSE
+	if(missing(yr)) {
+		if(lmodl$mod == "100")
+			warning("yr not provided - using best guess", call. = FALSE)
+		yr  <- format(file.info(fl)$mtime, "%Y")
+		guess <- TRUE
+	}
+
 
 	if(mode == "binary") {
 		if(lmodl$mod == "100" && grep('.\\.DAT', fl, perl = TRUE) < 1)
 			stop("LISST-100(X) binary files must have a .DAT extension", call. = FALSE)
 		if(lmodl$mod == "200" && grep('.\\.RBN', fl, perl = TRUE) < 1)
 			stop("LISST-200X binary files must have a .RBN extension", call. = FALSE)
-		lo <- lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl)
-		if(out == 'cal') lo <- lgetcal(lo, yr)
+		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl)
+		if(out == 'cal') lo <- lgetcal(lo)
 		else if(out == 'cor') lo <- lgetcor(lo)
 	} else {
-		lo <- lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl, yr)
+		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl)
 		if(out == 'pnc') lo <- lgetpnc(lo)
 	}
 
+	lo$Time <- .lgdate(lo, yr, guess)
 	return(lo)
 }
 
@@ -150,7 +176,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 #' models. It is not intended to be used directly, but called from 
 #' \code{read_lisst}.
 
-lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl, yr) {
+.lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl) {
 
 	if(lmodl$mod == "100") {
                 if(length(grep("_rs", fl)) > 0) ity <- "rs"
@@ -165,6 +191,8 @@ lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl, yr) {
 	lo <- as.data.frame(lo)
 	colnames(lo) <- lmodl$lvarn
 	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * as.numeric(lmodl$pl / pl)
+	lmodl$pl <- pl
+
 	for(i in c(1:38, 41:42)) units(lo[, i]) <- lmodl$varun[i]
 
 	zscatd <- rep(NA, lmodl$bnvar)
@@ -180,7 +208,6 @@ lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl, yr) {
 	attr(lo, "lmodl") <- lmodl
 	attr(lo, "zscat") <- zscatd
 	attr(lo, "class") <- c("lisst", "data.frame")
-	lo$Time <- lgdate(lo, yr)
 	return(lo)
 }
 
@@ -189,7 +216,7 @@ lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl, yr) {
 #' Read a LISST binary file for the registered instruments of supported models. 
 #' It is not intended to be used directly, but called from \code{read_lisst}.
 
-lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
+.lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
 	if(lmodl$mod == "100") {
 		lo <- readBin(fl, "integer", n = file.info(fl)$size, size = 1, signed = FALSE, 
 			endian = "little")
@@ -224,4 +251,47 @@ lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
 	}
 }
 
+#' Get LISST measurement dates
+#' 
+#' The function retrieves the date/time of measurements for the records in the 
+#' lisst object as POSIXct objects. The time zone of the dates will depend on 
+#' user tz options. It is not intended to be used directly, but called from
+#' read_lisst function.
+#'
+#' @param lo    A lisst object.
+#' @param yr    The year of first measurement in the lisst object. Ignored for 
+#'              LISST-200X.
+#' @param guess Logical. Is the yr passed a guess from read_lisst?
+#'
+#' @details
+#' If yr was not provided by the user, read_lisst will call lgdate with guess = 
+#' TRUE. This informs the function that the year passed is an estimate of the 
+#' last year of measurement, not the first as the yr passed by the user. It was kept
+#' this way since LISST users might be used to that way of informing date, but the
+#' guess date has to be about the last measurement. See the details of the 
+#' read_lisst function on how the guess is made.
+
+.lgdate <- function(lo, yr, guess = FALSE) {
+	lmodl <- attr(lo, "lmodl")
+	if(lmodl$mod == "100") {
+		julian <- floor(lo[, 39] / 100)
+		id <- which(diff(julian) <= -364)
+        	yr <- rep(yr, nrow(lo))
+		if(length(id) > 0) {
+			if(guess) yr <- yr - length(id)
+			for(i in 1:length(id)) {
+				yr[id[i]:length(yr)] <- yr[id[i]:length(yr)] + 1
+			}
+		}
+		hour   <- round(((lo[, 39] / 100) - julian) * 100)
+		min    <- floor(lo[, 40] / 100)
+        	sec    <- round(((lo[, 40] / 100) - min) * 100)
+        	dates  <- as.POSIXct(paste(yr, julian, hour, min, sec, sep = "-"), 
+			format = "%Y-%j-%H-%M-%S")
+	} else if(lmodl$mod == "200") {
+		dates  <- as.POSIXct(paste(lo[, 43], lo[, 44], lo[, 45], lo[, 46], lo[, 47], 
+				lo[, 48], sep = "-"), format = "%Y-%m-%d-%H-%M-%S")
+	}
+	return(dates)
+}
 

@@ -4,7 +4,7 @@
 \alias{lgetcal}
 \title{Retrieve the LISST calibrated values}
 \usage{
-lgetcal(lo, yr)
+lgetcal(lo)
 }
 \arguments{
 \item{lo}{A lisst object of type 'raw', 'cor' or 'cal'.}

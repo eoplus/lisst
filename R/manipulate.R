@@ -101,7 +101,7 @@ lgetcor <- function(lo) {
 #'
 #' @export
 
-lgetcal <- function(lo, yr) {
+lgetcal <- function(lo) {
 	typ <- attr(lo, "type")
 	if(typ == 'cal')
 		return(lo)
@@ -125,8 +125,6 @@ lgetcal <- function(lo, yr) {
 	lo[, "Beam attenuation"]     <- -log(tau) / lmodl$pl
 	lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]) * linst$ringcc, mW))
 
-	if(missing(yr)) yr <- NULL
-	lo$Time <- lgdate(lo, yr)
 	attr(lo, "type")  <- "cal"
 	return(lo)
 }
@@ -257,62 +255,4 @@ lgetvol <- function(lo) {
 	return(lo)
 }
 
-#' Get LISST measurement dates
-#' 
-#' The function retrieves the date/time of measurements for the records in the 
-#' lisst object as POSIXct objects. The time zone of the dates will depend on 
-#' user tz options.
-#'
-#' @param lo A lisst object of type 'raw', 'cor' or 'cal'.
-#' @param yr The year of first measurement in the lisst object. Can be omitted. 
-#'           Ignored for LISST-200X.
-#'
-#' @details If yr is not provided (or is NULL) teh function will perform a 'best 
-#' guess' (with a warning) based on the curent date and the julian date of first 
-#' measurement. Simply, if the julian day of first measurement is greater than
-#' the curent julian day, the previous from current year is assumed and the 
-#' current year otherwise.
-#'
-#' @export
-
-lgdate <- function(lo, yr) {
-	if(!is(lo, "lisst"))
-		stop("lo must be a lisst object", call. = FALSE)
-	typ <- attr(lo, "type")
-	if((typ == "cal" || typ == "vol" || typ == "pnc") && (sum(names(lo) == "Time") > 0))
-		return(lo[, "Time"])
-
-	if(attr(lo, "lmodl")$mod == "100") {
-		julian <- floor(lo[, 39] / 100)
-		if(missing(yr) || is.null(yr)) {
-			ct <- Sys.time()
-			cj <- as.numeric(format(ct, "%j"))
-			yr <- as.numeric(format(ct, "%Y"))
-			if(julian[1] > cj) {
-				yr <- yr - 1
-				warning("yr not provided; assuming previous year based on",
-					" julian dates", call. = FALSE)
-			} else {
-				warning("yr not provided, assuming current year based on", 
-					" julian dates", call. = FALSE)
-			}
-		}
-		id <- which(diff(julian) <= -364)
-        	yr <- rep(yr, nrow(lo))
-		if(length(id) > 0)
-			for(i in 1:length(id)) {
-				yr[id[i]:length(yr)] <- yr[id[i]:length(yr)]+1
-			}
-		hour   <- round(((lo[, 39] / 100) - julian) * 100)
-		min    <- floor(lo[, 40] / 100)
-        	sec    <- round(((lo[, 40] / 100) - min) * 100)
-        	dates  <- as.POSIXct(paste(yr, julian, hour, min, sec, sep = "-"), 
-			format = "%Y-%j-%H-%M-%S")
-		return(dates)
-	}
-
-	if(attr(lo, "linst")$mod == "200") {
-		cat("To be added soon...")
-	}
-}
 
