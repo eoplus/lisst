@@ -38,8 +38,22 @@ included in the name (e.g., "100C" or "100XC"). Ignored if sn is
 provided.}
 }
 \value{
-A lisst object with attribute type according to the processing level 
-requested.
+The function returns an object of class lisst, an S3 Class inheriting from 
+classes data.frame and units. Essentially the data is stored as units objects 
+in a data.frame, wich stores the ancilary data as attributes. The number of 
+columns in the data.frame is model dependent and is always one larger than 
+the standard LISST data since date/time in POSIXct format is added to the 
+objects.
+
+The attributes are not expected to be manipulated directly, so are only 
+briefly described:
+\itemize{
+  \item type  - The type of data in the lisst object;
+  \item linst - Instrument specific data;
+  \item lmodl - Model specific data;
+  \item lproc - The inversion model for processed data;
+  \item zscat - Background scattering values.
+}
 }
 \description{
 Read LISST processed or binary data files.
@@ -79,7 +93,44 @@ processed file the logic will break down in cases that the file is processed
 in a different year than the final measurement. If a guess was not correct 
 and the user have the approriate information, is possible to directly alter 
 the Time column in the lisst object using standard R tools to handle POSIX 
-objects.
+objects as an alternative to call \code{read_lisst} again.
+}
+\examples{
+flp <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+flb <- system.file("extdata", "DN_27.DAT", package = "lisst")
+
+# For a unregistered LISST instrument:
+model <- "100CX" 
+read_lisst(flp, model = model)
+read_lisst(fl, out = 'raw', model = model)
+
+# If other levels of processing, including VSF, are required, first
+register a LISST instrument:
+path  <- system.file("extdata", package = "lisst")
+model <- 100
+lisst_reg(model, path)
+
+sn    <- 1298
+pl    <- 0.05
+yr    <- 2018
+out   <- 'vol'
+zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+
+# For a processed file:
+read_lisst(flp, sn, pl, zscat, yr, out)
+read_lisst(flp, sn, pl, zscat, yr)
+read_lisst(flp, sn, pl, zscat)
+read_lisst(flp, sn, pl)
+read_lisst(flp, sn) # minimum information
+
+# For a binary file:
+read_lisst(flb, sn, pl, zscat, yr, out = 'raw')
+read_lisst(flb, sn, pl, zscat, yr, out = 'cor')
+read_lisst(flb, sn, pl, zscat, yr, out = 'cal')
+read_lisst(flb, sn, pl, zscat, yr)
+read_lisst(flb, sn, pl, zscat)
+read_lisst(flb, sn, zscat = zscat) # minimum information for full capability
+
 }
 \references{
 MATLAB source code provided by Sequoia Scientific, Inc, and available at:

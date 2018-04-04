@@ -1,6 +1,9 @@
 #' @import units
 NULL
 
+#' @import errors
+NULL
+
 #' Read LISST data
 #'
 #' Read LISST processed or binary data files. 
@@ -66,13 +69,64 @@ NULL
 #' the Time column in the lisst object using standard R tools to handle POSIX 
 #' objects as an alternative to call \code{read_lisst} again.
 #'
-#' @return A lisst object with attribute type according to the processing level 
-#' requested. 
+#' @return 
+#' The function returns an object of class lisst, an S3 Class inheriting from 
+#' classes data.frame and units. Essentially the data is stored as units objects 
+#' in a data.frame, wich stores the ancilary data as attributes. The number of 
+#' columns in the data.frame is model dependent and is always one larger than 
+#' the standard LISST data since date/time in POSIXct format is added to the 
+#' objects.
+#'
+#' The attributes are not expected to be manipulated directly, so are only 
+#' briefly described:
+#' \itemize{
+#'   \item type  - The type of data in the lisst object;
+#'   \item linst - Instrument specific data;
+#'   \item lmodl - Model specific data;
+#'   \item lproc - The inversion model for processed data;
+#'   \item zscat - Background scattering values.
+#' }
 #'
 #' @references
 #' MATLAB source code provided by Sequoia Scientific, Inc, and available at:
 #' https://www.sequoiasci.com/product/lisst-100x/, 
 #' https://www.sequoiasci.com/product/lisst-200x/
+#'
+#' @examples
+#' flp <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+#' flb <- system.file("extdata", "DN_27.DAT", package = "lisst")
+#'
+#' # For a unregistered LISST instrument:
+#' model <- "100CX" 
+#' read_lisst(flp, model = model)
+#' read_lisst(fl, out = 'raw', model = model)
+#' 
+#' # If other levels of processing, including VSF, are required, first
+#' register a LISST instrument:
+#' path  <- system.file("extdata", package = "lisst")
+#' model <- 100
+#' lisst_reg(model, path)
+#'
+#' sn    <- 1298
+#' pl    <- 0.05
+#' yr    <- 2018
+#' out   <- 'vol'
+#' zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+#'
+#' # For a processed file:
+#' read_lisst(flp, sn, pl, zscat, yr, out)
+#' read_lisst(flp, sn, pl, zscat, yr)
+#' read_lisst(flp, sn, pl, zscat)
+#' read_lisst(flp, sn, pl)
+#' read_lisst(flp, sn) # minimum information
+#'
+#' # For a binary file:
+#' read_lisst(flb, sn, pl, zscat, yr, out = 'raw')
+#' read_lisst(flb, sn, pl, zscat, yr, out = 'cor')
+#' read_lisst(flb, sn, pl, zscat, yr, out = 'cal')
+#' read_lisst(flb, sn, pl, zscat, yr)
+#' read_lisst(flb, sn, pl, zscat)
+#' read_lisst(flb, sn, zscat = zscat) # minimum information for full capability
 #'
 #' @export
 
@@ -85,7 +139,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	if(missing(out) && mode == "processed") out <- "vol"
 	if(missing(out) && mode == "binary")    out <- "cal"
 	if(mode == "processed" && !(out == "vol" || out == "pnc"))
-		stop("out for processed SOP files must be 'vol' or 'pnc'", call. = FALSE)
+		stop("out for LISST-SOP processed files must be 'vol' or 'pnc'", call. = FALSE)
 	if(mode == "binary" && (out == "vol" || out == "pnc"))
 		stop("out for binary LISST files must be 'raw', 'cor' or 'cal'", call. = FALSE)
 
@@ -94,7 +148,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			stop(paste("Processing of binary to 'cor' or 'cal' requires instrument specific", 
 				"information. sn must be provided."), call. = FALSE)
 		else if(missing(model))
-			stop(paste("For reading processed files or for 'raw' and 'cor' outputs",
+			stop(paste("For reading processed files or for 'raw' outputs",
 				"from binary files, model must be supplied if sn is not"), call. = FALSE)
 
 		linst <- list(X = FALSE)
@@ -107,7 +161,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			"100C" = .getmodp(list(mod = "100", dty = "C"))
 		)
 		if(is.null(lmodl))
-			stop("model must be one of '100B(X)', '100C(X)' or '200'", call. = FALSE)
+			stop("model must be one of '100(X)B', '100(X)C' or '200'", call. = FALSE)
 		sn    <- NA
 	} else {
 		sn <- as.character(sn)
@@ -201,9 +255,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			zscatd <- as.numeric(read.table(zscat)[, 1])
 	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
-	linst$ity <- ity
-	attr(lo, "sn")    <- sn
 	attr(lo, "type")  <- "vol"
+	attr(lo, "lproc") <- ity
 	attr(lo, "linst") <- linst
 	attr(lo, "lmodl") <- lmodl
 	attr(lo, "zscat") <- zscatd
@@ -237,8 +290,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 
 		lo <- as.data.frame(lo)
 		colnames(lo) <- lmodl$lvarn[1:lmodl$bnvar]
-		attr(lo, "sn")    <- sn
 		attr(lo, "type")  <- "raw"
+		attr(lo, "lproc") <- NA
 		attr(lo, "linst") <- linst
 		attr(lo, "lmodl") <- lmodl
 		attr(lo, "zscat") <- zscatd

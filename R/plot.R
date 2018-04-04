@@ -32,7 +32,7 @@ plot.lisst <- function(lo, xu, type, ...) {
 		}
 	}
 	if(type == 'vol' || type == 'pnc' || type == 'psd') {
-		x <- lmodl$binr[[linst$ity]]
+		x <- lmodl$binr[[attr(lo, "lproc")]]
 		if(!missing(xu)) units(x) <- xu
 		id <- which(as.numeric(lo[, 1]) == 0)
 		if((type == 'vol' && typ == 'pnc') || type == 'psd') lo <- lgetvol(lo)

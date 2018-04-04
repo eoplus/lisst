@@ -9,8 +9,8 @@
 		NextMethod(drop = drop)
 	} else {
 		structure(NextMethod(drop = drop), 
-			"sn" = attr(x, "sn"), 
 			"type" = attr(x, "type"),
+			"lproc" = attr(x, "lproc"),
 			"linst" = attr(x, "linst"),
 			"lmodl" = attr(x, "lmodl"),
 			"zscat" = attr(x, "zscat"),
@@ -50,7 +50,7 @@ lgetcor <- function(lo) {
 	zscat <- attr(lo, "zscat")
 	if(is.na(zscat[1]))
 		stop("zscat data is missing from lisst object. Run read_lisst with zscat file path", call. = FALSE)
-	if(is.na(attr(lo, "sn")))
+	if(is.na(attr(lo, "linst")$sn))
 		stop("Corrected digital counts requires instrument specific information. Run read_list with sn", call. = FALSE)
 
 	linst <- attr(lo, "linst")
@@ -75,7 +75,7 @@ lgetcor <- function(lo) {
 		lo[, "Laser reference"]      <- (lo[, "Laser reference"] - linst$lrefcc[2]) / linst$lrefcc[1]
 		lo[, "Depth"]                <- (lo[, "Depth"] - linst$dpthcc[2]) / linst$dpthcc[1]
 		lo[, "Temperature"]          <- (lo[, "Temperature"] - linst$tempcc[2]) / linst$tempcc[1]
-		lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]), mW) / linst$ringcc)
+		lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]), µW) / linst$ringcc)
 		lo <- lo[, -which(names(lo) == "Optical transmission")]
 		lo <- lo[, -which(names(lo) == "Beam attenuation")]
 		lo <- lo[, -which(names(lo) == "Time")]
@@ -123,7 +123,7 @@ lgetcal <- function(lo) {
 	lo[, "Temperature"]          <- lo[, "Temperature"] * linst$tempcc[1] + linst$tempcc[2]
 	lo[, "Optical transmission"] <- tau
 	lo[, "Beam attenuation"]     <- -log(tau) / lmodl$pl
-	lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]) * linst$ringcc, mW))
+	lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]) * linst$ringcc, µW))
 
 	attr(lo, "type")  <- "cal"
 	return(lo)
