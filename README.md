@@ -4,6 +4,11 @@
 
 An R package to read, manipulate and visualize data from the Laser In-Situ Scattering and Transmissometry (LISST) instruments, Sequoia Scientific, Inc.
 
+```
+# Install from Github:
+devtools::install_github("AlexCast/lisst")
+```
+
 ### Provided functionality:
 - Absolute particle VSF retrieval from binary file;
 - Particle number concentraton from ppm Volume;
