@@ -29,8 +29,8 @@ i.e., no path reduction module in use.}
 for LISST-100(X). If not provided, function will make a best 
 guess (with a warning). See details.}
 
-\item{out}{The output format. Valid options are 'raw', 'cor', 'cal', 'vol' 
-and 'pnc'. See details.}
+\item{out}{The output format. Valid options are 'raw', 'cor', 'cal', 'vsf', 
+'vol' and 'pnc'. See details.}
 
 \item{model}{A character vector of the instrument model (e.g. "200" for 
 LISST-200X). For the LISST-100(X), the detector type must be 
@@ -51,7 +51,7 @@ briefly described:
   \item type  - The type of data in the lisst object;
   \item linst - Instrument specific data;
   \item lmodl - Model specific data;
-  \item lproc - The inversion model for processed data;
+  \item lproc - Processing applied to data (including inversion model);
   \item zscat - Background scattering values.
 }
 }
@@ -66,19 +66,24 @@ for the LISST-100(X) and LISST-200X, respectivelly.
 
 The parameter out determine the level of processing of the returned object. 
 For binary files out can be 'raw' for the raw digital counts, 'cor' for the 
-corrected digital counts or 'cal' for values in calibrated physical units. 
-The corrected digital counts are the raw counts de-attenuated for the 
-particle extinction, background subtracted and compensated for area 
-deviations from nominal values. 'cal' applies the instrument specific 
-calibration constants to 'cor' (for all variables). If out is not provided, 
-'cal' will be returned for a binary file input. For processed files, out can 
-be 'vol' for the volume concentration (ppm) or 'pnc' for the number 
-concentration (1/L/µm). If not provided, 'vol' will be returned for processed
-files. As of this version, is not possible to direcly retrieve the particle 
-size distribution (PSD) from binary data (inversion model not implemented), 
-so 'vol' and 'pnc' can only be selected for processed files. Functions 
-\code{lgetraw}, \code{lgetcor}, \code{lgetcal}, \code{lgetvol} and 
-\code{lgetpnc} allow to switch between types without need to read from disk. 
+corrected digital counts, 'cal' for values in calibrated physical units or 
+'vsf' for the volume scattering function. The corrected digital counts are 
+the raw counts de-attenuated for the particle \strong{and water} extinction, 
+background subtracted and compensated for area deviations from nominal 
+values. 'cal' applies the instrument specific calibration constants to 'cor' 
+(for all variables). Aditionally, the transmittance and the particle beam 
+attenuation are added in 'cal' type lisst objects. The particle volume 
+scattering function is the calibrated values normalized by the detector solid
+angle, length of the path generating the signal and energy enetering the 
+path. If out is not provided, 'vsf' will be returned for a binary file input. 
+For processed files, out can be 'vol' for the volume concentration (ppm) or 
+'pnc' for the number concentration (1/L/µm). If not provided, 'vol' will be 
+returned for processed files. As of this version, is not possible to direcly 
+retrieve the particle size distribution (PSD) from binary data (inversion 
+model not implemented), so 'vol' and 'pnc' can only be selected for processed 
+files. Functions \code{lget}, \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, 
+\code{lgetvsf}, \code{lgetvol} and \code{lgetpnc} allow to switch between 
+types without need to read from disk. 
 
 A column "Time", with date/time in POSIXct format is added to all created 
 objects. If yr is missing when reading a LISST-100(X) file, the function will 
@@ -136,4 +141,9 @@ read_lisst(flb, sn, zscat = zscat) # minimum information for full capability
 MATLAB source code provided by Sequoia Scientific, Inc, and available at:
 https://www.sequoiasci.com/product/lisst-100x/, 
 https://www.sequoiasci.com/product/lisst-200x/
+}
+\seealso{
+\code{\link{lget}}, \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+\code{\link{lgetval}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}} and 
+\code{\link{lgetpnc}}.
 }

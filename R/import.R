@@ -1,8 +1,3 @@
-#' @import units
-NULL
-
-#' @import errors
-NULL
 
 #' Read LISST data
 #'
@@ -25,8 +20,8 @@ NULL
 #' @param yr    The year of first measurement in the data file. Only necessary 
 #'              for LISST-100(X). If not provided, function will make a best 
 #'              guess (with a warning). See details.
-#' @param out   The output format. Valid options are 'raw', 'cor', 'cal', 'vol' 
-#'              and 'pnc'. See details.
+#' @param out   The output format. Valid options are 'raw', 'cor', 'cal', 'vsf', 
+#'              'vol' and 'pnc'. See details.
 #' @param model A character vector of the instrument model (e.g. "200" for 
 #'              LISST-200X). For the LISST-100(X), the detector type must be 
 #'              included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
@@ -40,19 +35,24 @@ NULL
 #'
 #' The parameter out determine the level of processing of the returned object. 
 #' For binary files out can be 'raw' for the raw digital counts, 'cor' for the 
-#' corrected digital counts or 'cal' for values in calibrated physical units. 
-#' The corrected digital counts are the raw counts de-attenuated for the 
-#' particle extinction, background subtracted and compensated for area 
-#' deviations from nominal values. 'cal' applies the instrument specific 
-#' calibration constants to 'cor' (for all variables). If out is not provided, 
-#' 'cal' will be returned for a binary file input. For processed files, out can 
-#' be 'vol' for the volume concentration (ppm) or 'pnc' for the number 
-#' concentration (1/L/µm). If not provided, 'vol' will be returned for processed
-#' files. As of this version, is not possible to direcly retrieve the particle 
-#' size distribution (PSD) from binary data (inversion model not implemented), 
-#' so 'vol' and 'pnc' can only be selected for processed files. Functions 
-#' \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, \code{lgetvol} and 
-#' \code{lgetpnc} allow to switch between types without need to read from disk. 
+#' corrected digital counts, 'cal' for values in calibrated physical units or 
+#' 'vsf' for the volume scattering function. The corrected digital counts are 
+#' the raw counts de-attenuated for the particle \strong{and water} extinction, 
+#' background subtracted and compensated for area deviations from nominal 
+#' values. 'cal' applies the instrument specific calibration constants to 'cor' 
+#' (for all variables). Aditionally, the transmittance and the particle beam 
+#' attenuation are added in 'cal' type lisst objects. The particle volume 
+#' scattering function is the calibrated values normalized by the detector solid
+#' angle, length of the path generating the signal and energy enetering the 
+#' path. If out is not provided, 'vsf' will be returned for a binary file input. 
+#' For processed files, out can be 'vol' for the volume concentration (ppm) or 
+#' 'pnc' for the number concentration (1/L/µm). If not provided, 'vol' will be 
+#' returned for processed files. As of this version, is not possible to direcly 
+#' retrieve the particle size distribution (PSD) from binary data (inversion 
+#' model not implemented), so 'vol' and 'pnc' can only be selected for processed 
+#' files. Functions \code{lget}, \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, 
+#' \code{lgetvsf}, \code{lgetvol} and \code{lgetpnc} allow to switch between 
+#' types without need to read from disk. 
 #'
 #' A column "Time", with date/time in POSIXct format is added to all created 
 #' objects. If yr is missing when reading a LISST-100(X) file, the function will 
@@ -83,7 +83,7 @@ NULL
 #'   \item type  - The type of data in the lisst object;
 #'   \item linst - Instrument specific data;
 #'   \item lmodl - Model specific data;
-#'   \item lproc - The inversion model for processed data;
+#'   \item lproc - Processing applied to data (including inversion model);
 #'   \item zscat - Background scattering values.
 #' }
 #'
@@ -91,6 +91,10 @@ NULL
 #' MATLAB source code provided by Sequoia Scientific, Inc, and available at:
 #' https://www.sequoiasci.com/product/lisst-100x/, 
 #' https://www.sequoiasci.com/product/lisst-200x/
+#'
+#' @seealso \code{\link{lget}}, \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+#' \code{\link{lgetval}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}} and 
+#' \code{\link{lgetpnc}}.
 #'
 #' @examples
 #' flp <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
@@ -133,27 +137,28 @@ NULL
 read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	if(!file.exists(fl))
 		stop(paste("File", fl, "not found"), call. = FALSE)
+
 	mode <- "processed"
 	if(length(grep('.(\\.asc|\\.csv)', fl, perl = TRUE)) < 1) mode <- "binary"
 
 	if(missing(out) && mode == "processed") out <- "vol"
-	if(missing(out) && mode == "binary")    out <- "cal"
+	if(missing(out) && mode == "binary")    out <- "vsf"
 	if(mode == "processed" && !(out == "vol" || out == "pnc"))
 		stop("out for LISST-SOP processed files must be 'vol' or 'pnc'", call. = FALSE)
 	if(mode == "binary" && (out == "vol" || out == "pnc"))
-		stop("out for binary LISST files must be 'raw', 'cor' or 'cal'", call. = FALSE)
+		stop("out for binary LISST files must be 'raw', 'cor', 'cal' or vsf", call. = FALSE)
 
 	if(missing(sn)) {
-		if(out == "cor" || out == "cal")
-			stop(paste("Processing of binary to 'cor' or 'cal' requires instrument specific", 
-				"information. sn must be provided."), call. = FALSE)
+		if(out == "cor" || out == "cal" || out == 'vsf')
+			stop("Processing of binary to 'cor', 'cal' or 'vsf' requires instrument specific ",
+				"information. sn of a registered instrument must be provided.", 
+				call. = FALSE)
 		else if(missing(model))
-			stop(paste("For reading processed files or for 'raw' outputs",
-				"from binary files, model must be supplied if sn is not"), call. = FALSE)
+			stop("For reading processed files or for 'raw' outputs from binary files, ",
+				"model must be supplied if sn is not", call. = FALSE)
 
 		linst <- list(X = FALSE)
-		if(length(grep("X", model)) > 0)
-			linst <- list(X = TRUE)
+		if(length(grep("X", model)) > 0) linst$X <- TRUE
 		model <- sub("X", "", model)
 		lmodl <- switch(model, 
 			"200"  = .getmodp(list(mod = "200", dty = "A")),
@@ -161,7 +166,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			"100C" = .getmodp(list(mod = "100", dty = "C"))
 		)
 		if(is.null(lmodl))
-			stop("model must be one of '100(X)B', '100(X)C' or '200'", call. = FALSE)
+			stop("model must be one of '100(X)B', '100(X)C' or '200X'", call. = FALSE)
 		sn    <- NA
 	} else {
 		sn <- as.character(sn)
@@ -172,12 +177,12 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 		model <- NULL
 	}
 	if(missing(zscat)) {
-		if(out == 'cor' || out == 'cal')
-			stop("zscat must be provided for out 'cor' or 'cal'", call. = FALSE)
+		if(out == 'cor' || out == 'cal' || out == 'vsf')
+			stop("zscat must be provided for out 'cor', 'cal' or 'vsf'", call. = FALSE)
 		else
 			zscat <- NULL
 	} else if(!file.exists(zscat)) {
-		if(out == 'cor' || out == 'cal')
+		if(out == 'cor' || out == 'cal' || out == 'vsf')
 			stop(paste("File", zscat, "not found"), call. = FALSE)
 		else {
 			zscat <- NULL
@@ -193,10 +198,11 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 		warning(paste("pl not provided - assuming standard path length"), 
 			call. = FALSE)
 		pl <- lmodl$pl
-	} else if(units::set_units(pl, m) > lmodl$pl) {
+	} else if(pl > drop_quantities(lmodl$pl)) {
 		stop(paste0("Path length in LISST-", linst$mod, " cannot be larger than ", 
-			lmodl$pl, " m"), call. = FALSE)
+			drop_quantities(lmodl$pl), " m"), call. = FALSE)
 	}
+	pl <- set_quantities(pl, m, 0)
 
 	guess <- FALSE
 	if(missing(yr)) {
@@ -212,11 +218,12 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			stop("LISST-100(X) binary files must have a .DAT extension", call. = FALSE)
 		if(lmodl$mod == "200" && grep('.\\.RBN', fl, perl = TRUE) < 1)
 			stop("LISST-200X binary files must have a .RBN extension", call. = FALSE)
-		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl)
-		if(out == 'cal') lo <- lgetcal(lo)
-		else if(out == 'cor') lo <- lgetcor(lo)
+		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, 
+			lmodl = lmodl)
+		lo <- lget(lo, out)
 	} else {
-		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, lmodl = lmodl)
+		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, 
+			lmodl = lmodl)
 		if(out == 'pnc') lo <- lgetpnc(lo)
 	}
 
@@ -224,11 +231,11 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	return(lo)
 }
 
-#' Read a LISST processed file
-#'
-#' Read a LISST processed file for the registered instruments of supported 
-#' models. It is not intended to be used directly, but called from 
-#' \code{read_lisst}.
+# Read a LISST processed file
+#
+# Read a LISST processed file for the registered instruments of supported 
+# models. It is not intended to be used directly, but called from 
+# \code{read_lisst}.
 
 .lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl) {
 
@@ -244,30 +251,32 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	}
 	lo <- as.data.frame(lo)
 	colnames(lo) <- lmodl$lvarn
-	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * as.numeric(lmodl$pl / pl)
+	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * drop_quantities(lmodl$pl / pl)
 	lmodl$pl <- pl
 
-	for(i in c(1:38, 41:42)) units(lo[, i]) <- lmodl$varun[i]
-
-	zscatd <- rep(NA, lmodl$bnvar)
+	zscatd <- rep(as.numeric(NA), lmodl$bnvar)
 	if(!(missing(zscat) || is.null(zscat)))
 		if(file.exists(zscat))
 			zscatd <- as.numeric(read.table(zscat)[, 1])
+	zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
 	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
-	attr(lo, "type")  <- "vol"
-	attr(lo, "lproc") <- ity
-	attr(lo, "linst") <- linst
-	attr(lo, "lmodl") <- lmodl
-	attr(lo, "zscat") <- zscatd
-	attr(lo, "class") <- c("lisst", "data.frame")
+	id <- setdiff(lmodl$lvarn, c("Time1","Time2","Year","Month","Day","Hour","Minute","Second"))
+	id <- which(lmodl$lvarn %in% id)
+	for(i in id) {
+		quantities(lo[, i]) <- list(1, 0)
+		if(i < lmodl$bnvar) quantities(zscatd[, i]) <- list(1, 0)
+	}
+
+	lo <- structure(lo, type = 'vol', lproc = list(ity = ity), linst = linst, 
+		lmodl = lmodl, zscat = zscatd, class = c("lisst", "data.frame"))
 	return(lo)
 }
 
-#' Read a LISST binary file
-#'
-#' Read a LISST binary file for the registered instruments of supported models. 
-#' It is not intended to be used directly, but called from \code{read_lisst}.
+# Read a LISST binary file
+#
+# Read a LISST binary file for the registered instruments of supported models. 
+# It is not intended to be used directly, but called from \code{read_lisst}.
 
 .lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
 	lmodl$pl <- pl
@@ -282,21 +291,26 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			lo[, 1:32] <- lo[, 1:32] / 10
 		}
 
-		zscatd <- rep(NA, lmodl$bnvar)
+		zscatd <- rep(as.numeric(NA), lmodl$bnvar)
 		if(!(missing(zscat) || is.null(zscat)))
 			if(file.exists(zscat))
 				zscatd <- as.numeric(read.table(zscat)[, 1])
+		zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
 		names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
 		lo <- as.data.frame(lo)
 		colnames(lo) <- lmodl$lvarn[1:lmodl$bnvar]
-		attr(lo, "type")  <- "raw"
-		attr(lo, "lproc") <- NA
-		attr(lo, "linst") <- linst
-		attr(lo, "lmodl") <- lmodl
-		attr(lo, "zscat") <- zscatd
-		attr(lo, "class") <- c("lisst", "data.frame")
+		id <- setdiff(lmodl$lvarn[1:lmodl$bnvar], c("Time1","Time2","Year","Month","Day",
+			"Hour","Minute","Second"))
+		id <- which(lmodl$lvarn %in% id)
+		for(i in id) {
+			quantities(lo[, i]) <- list(1, 0)
+			quantities(zscatd[, i]) <- list(1, 0)
+		}
 
+		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), linst = linst, 
+			lmodl = lmodl, zscat = zscatd, class = c("lisst", 
+			"data.frame"))
 		return(lo)
 	}
 
@@ -305,25 +319,25 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	}
 }
 
-#' Get LISST measurement dates
-#' 
-#' The function retrieves the date/time of measurements for the records in the 
-#' lisst object as POSIXct objects. The time zone of the dates will depend on 
-#' user tz options. It is not intended to be used directly, but called from
-#' read_lisst function.
-#'
-#' @param lo    A lisst object.
-#' @param yr    The year of first measurement in the lisst object. Ignored for 
-#'              LISST-200X.
-#' @param guess Logical. Is the yr passed a guess from read_lisst?
-#'
-#' @details
-#' If yr was not provided by the user, read_lisst will call lgdate with guess = 
-#' TRUE. This informs the function that the year passed is an estimate of the 
-#' last year of measurement, not the first as the yr passed by the user. It was kept
-#' this way since LISST users might be used to that way of informing date, but the
-#' guess date has to be about the last measurement. See the details of the 
-#' read_lisst function on how the guess is made.
+# Get LISST measurement dates
+# 
+# The function retrieves the date/time of measurements for the records in the 
+# lisst object as POSIXct objects. The time zone of the dates will depend on 
+# user tz options. It is not intended to be used directly, but called from
+# read_lisst function.
+#
+# param lo    A lisst object.
+# param yr    The year of first measurement in the lisst object. Ignored for 
+#             LISST-200X.
+# param guess Logical. Is the yr passed a guess from read_lisst?
+#
+# details
+# If yr was not provided by the user, read_lisst will call lgdate with guess = 
+# TRUE. This informs the function that the year passed is an estimate of the 
+# last year of measurement, not the first as the yr passed by the user. It was kept
+# this way since LISST users might be used to that way of informing date, but the
+# guess date has to be about the last measurement. See the details of the 
+# read_lisst function on how the guess is made.
 
 .lgdate <- function(lo, yr, guess = FALSE) {
 	lmodl <- attr(lo, "lmodl")
@@ -348,4 +362,5 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	}
 	return(dates)
 }
+
 

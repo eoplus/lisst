@@ -15,15 +15,16 @@ details.}
 }
 \description{
 Register a new LISST instrument by importing calibration data and storing it 
-convenient processing of LISST data.
+for convenient processing of LISST data.
 }
 \details{
 For the LISST-100(X) the function expects that files follow the 
 naming convention for LISST installation files. Specifically, it will search 
 for a factory background file (factory_zsc_*.asc), a ring area file 
-(ringarea_*.asc), an instrument data file (InstrumentData.txt) and a LISST 
-SOP ini file (lisst.ini). All files should be in the same directory provided 
-in the path argument, and it should contain files for a single instrument.
+(ringarea_*.asc), an instrument data file (InstrumentData.txt) and a 
+LISST-SOP ini file (lisst.ini). All files should be in the same directory 
+provided in the path argument, and it should contain files for a single 
+instrument.
 }
 \examples{
 :

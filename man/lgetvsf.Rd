@@ -4,14 +4,14 @@
 \alias{lgetvsf}
 \title{Retrieve VSF from LISST data}
 \usage{
-lgetvsf(lo)
+lgetvsf(x)
 }
 \arguments{
-\item{lo}{A lisst object of type 'raw', 'cor' or 'cal'.}
+\item{x}{A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.}
 }
 \description{
-The function retrieves the absolute particle Volume Scattering Function 
-(1/m/sr) for LISST data.
+The function retrieves the particle Volume Scattering Function (1/m/sr) for 
+LISST data.
 }
 \details{
 Types 'raw' and 'cor' are converted to 'cal' first. The function 

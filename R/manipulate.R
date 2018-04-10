@@ -14,17 +14,106 @@
 			"linst" = attr(x, "linst"),
 			"lmodl" = attr(x, "lmodl"),
 			"zscat" = attr(x, "zscat"),
-			class = c("lisst", "data.frame")
-		)
+			class = c("lisst", "data.frame"))
 	}
+}
+
+#' Convert between LISST data representations
+#'
+#' This set of functions allow for the convertion between lisst data types.
+#'
+#' @param x    A lisst object.
+#' @param type A character specifing the lisst data type. One of 'raw', 'cor', 
+#' 'cal', 'vsf', 'vol', 'pnc'. See details.
+#' 
+#' @details lget dispatch the appropriate lgetxxx function acording to parameter 
+#' type. As of this version is only possible to convert between 'raw', 'cor', 
+#' 'cal' and 'vsf' or between 'vol' and 'pnc' (inversion not implemented). 
+#' \describe{
+#'   \item{raw}{The raw digital counts as recorded by the LISST instrument}
+#'   \item{cor}{The corrected digital counts, i.e., the raw counts de-attenuated 
+#'              for the particle \strong{and water} extinction, background 
+#'              subtracted and compensated for area deviations from nominal 
+#'              values}
+#'   \item{cal}{The calibrated values, i.e., the instrument specific calibration 
+#'              constants applied to the corrected values (for all variables). 
+#'              Aditionally, the transmittance due to particles and the particle 
+#'              beam attenuation are added to the lisst object}
+#'   \item{vsf}{The volume scattering function, i.e., the calibrated values 
+#'              normalized to incident power, the solid angle of the detectors 
+#'              and the path of water generating the signal}
+#'   \item{vol}{The particle volume concentration (ppm volume) per size bin, as 
+#'		inverted from the scattering data by the LISST-SOP}
+#'   \item{pnc}{The particle number concentration per volume and µm size. }
+#' }
+#' 
+#' See the documentation of the lget functions for further details.
+#'
+#' @seealso \code{\link{lgetraw}}, \code{\link{lgetcor}}, \code{\link{lgetcal}},
+#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#'
+#' @export
+
+lget <- function(x, type) {
+	switch(type, 
+		"raw" = lgetraw(x),
+		"cor" = lgetcor(x),
+		"cal" = lgetcal(x),
+		"vsf" = lgetvsf(x),
+		"vol" = lgetvol(x),
+		"pnc" = lgetpnc(x),
+		stop("type must be one of: 'raw', 'cor', 'cal', 'vsf', 'vol', 'pnc'", call. = FALSE)
+	)
+}
+
+#' Retrieve the LISST raw digital counts
+#'
+#' The function retrieve the raw digital counts (lisst object type 'raw')
+#' from corrected digital counts ('cor'), calibrated values ('cal'), or  
+#' volume scattering function ('vsf').
+#'
+#' @param x A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.
+#'
+#' @seealso \code{\link{lgetcor}}, \code{\link{lgetval}}, \code{\link{lgetvsf}}, 
+#' \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#'
+#' @export
+
+lgetraw <- function(x) {
+	typ <- attr(x, "type")
+	if(typ == 'raw')
+		return(x)
+	else if(typ == 'cal' || typ == 'vsf') x <- lget(x, 'cor')
+	else if(typ != 'cor')
+		stop("Raw digital counts can only be retrieved from a 'cor', 'cal' or 'vsf' lisst ",
+			"object", call. = FALSE)
+
+	zscat <- attr(x, "zscat")
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+
+	wext <- quantities::set_quantities(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1, 0)
+	tau  <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
+		zscat[, "Laser transmission"] / x[, "Laser reference"]
+
+	for(i in 1:lmodl$nring) {
+		x[, i] <- x[, i] / linst$ringcf[i]
+		x[, i] <- x[, i] * wext
+		x[, i] <- (x[, i] + (zscat[, i] * x[, "Laser reference"] / 
+			zscat[, "Laser reference"])) * tau
+	}
+
+	attr(x, "type")  <- "raw"
+	x
 }
 
 #' Retrieve the LISST corrected digital counts
 #'
 #' The function retrieve the corrected digital counts (lisst object type 'cor')
-#' from raw digital counts ('raw') or from calibrated values ('cal').
+#' from raw digital counts ('raw'), calibrated values ('cal') or volume 
+#' scattering function ('vsf').
 #'
-#' @param lo A lisst object of type 'raw', 'cor' or 'cal'.
+#' @param x A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.
 #'
 #' @details When supplying a lisst 'raw' object, it must contain information on 
 #' background values and instrument specific calibration constants. This is the
@@ -41,100 +130,113 @@
 #'
 #' @export
 
-lgetcor <- function(lo) {
-	typ <- attr(lo, "type")
-	if(typ == 'cor')
-		return(lo)
-	if(!(typ == 'cal' || typ == 'raw'))
-		stop("Corrected digital counts can only be retrieved from a 'raw' or 'cal' lisst object", call. = FALSE)
-	zscat <- attr(lo, "zscat")
-	if(is.na(zscat[1]))
-		stop("zscat data is missing from lisst object. Run read_lisst with zscat file path", call. = FALSE)
-	if(is.na(attr(lo, "linst")$sn))
-		stop("Corrected digital counts requires instrument specific information. Run read_list with sn", call. = FALSE)
-
-	linst <- attr(lo, "linst")
-	lmodl <- attr(lo, "lmodl")
-	if(typ == 'raw') {
-		aw670 <- 0.439
-		bw670 <- 0.0005808404
-		wext <- exp(-(aw670 + bw670) * as.numeric(lmodl$pl))
-
-		tau <- lo[, "Laser transmission"] * zscat["Laser reference"] / 
-			zscat["Laser transmission"] / lo[, "Laser reference"]
-
-		lo[, 1:lmodl$nring] <- lo[, 1:lmodl$nring] / tau - (rep(zscat[1:lmodl$nring], 
-			each = nrow(lo)) * lo[, "Laser reference"] / zscat["Laser reference"])
-		lo[, 1:lmodl$nring] <- lo[, 1:lmodl$nring] / wext
-		lo[, 1:lmodl$nring] <- rep(linst$ringcf, each = nrow(lo)) * lo[, 1:lmodl$nring]
-		lo[, 1:lmodl$nring][lo[, 1:lmodl$nring] < 0] <- 0
-	} else {
-		lo[, "Laser transmission"]   <- (lo[, "Laser transmission"] - linst$lpowcc[2]) / linst$lpowcc[1]
-		lo[, "Battery voltage"]      <- (lo[, "Battery voltage"] - linst$battcc[2]) / linst$battcc[1]
-		lo[, "External input 1"]     <- (lo[, "External input 1"] - linst$extrcc[2]) / linst$extrcc[1]
-		lo[, "Laser reference"]      <- (lo[, "Laser reference"] - linst$lrefcc[2]) / linst$lrefcc[1]
-		lo[, "Depth"]                <- (lo[, "Depth"] - linst$dpthcc[2]) / linst$dpthcc[1]
-		lo[, "Temperature"]          <- (lo[, "Temperature"] - linst$tempcc[2]) / linst$tempcc[1]
-		lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]), µW) / linst$ringcc)
-		lo <- lo[, -which(names(lo) == "Optical transmission")]
-		lo <- lo[, -which(names(lo) == "Beam attenuation")]
-		lo <- lo[, -which(names(lo) == "Time")]
+lgetcor <- function(x) {
+	typ <- attr(x, "type")
+	if(typ == 'cor') return(x)
+	else if(typ == 'vsf') {
+		x <- lget(x, 'cal')
+		typ <- attr(x, "type")
 	}
-	attr(lo, "type")  <- "cor"
-	return(lo)
+	else if(!(typ == 'cal' || typ == 'raw'))
+		stop("Corrected digital counts can only be retrieved from a 'raw', 'cal' or 'vol' ",
+			"lisst object", call. = FALSE)
+	zscat <- attr(x, "zscat")
+	if(is.na(zscat[1]))
+		stop("zscat data is missing from lisst object. Run read_lisst with zscat file ",
+			"path set", call. = FALSE)
+	if(is.na(attr(x, "linst")$sn))
+		stop("Corrected digital counts requires instrument specific information. Run ",
+			"read_list with sn set", call. = FALSE)
+
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+	if(typ == 'raw') {
+		wext <- set_quantities(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1, 0)
+		tau  <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
+			zscat[, "Laser transmission"] / x[, "Laser reference"]
+
+		for(i in 1:lmodl$nring) {
+			x[, i] <- x[, i] / tau - (zscat[, i] * x[, "Laser reference"] / 
+				zscat[, "Laser reference"])
+			x[, i] <- x[, i] / wext
+			x[, i] <- x[, i] * linst$ringcf[i]
+			x[, i][drop_quantities(x[, i]) < 0] <- .zero
+		}
+	} else {
+		x[, "Laser transmission"] <- (x[, "Laser transmission"] - linst$lpowcc[2]) / linst$lpowcc[1]
+		x[, "Battery voltage"]    <- (x[, "Battery voltage"]    - linst$battcc[2]) / linst$battcc[1]
+		x[, "External input 1"]   <- (x[, "External input 1"]   - linst$extrcc[2]) / linst$extrcc[1]
+		x[, "Laser reference"]    <- (x[, "Laser reference"]    - linst$lrefcc[2]) / linst$lrefcc[1]
+		x[, "Depth"]              <- (x[, "Depth"]              - linst$dpthcc[2]) / linst$dpthcc[1]
+		x[, "Temperature"]        <- (x[, "Temperature"]        - linst$tempcc[2]) / linst$tempcc[1]
+		for(i in 1:lmodl$nring) x[, i] <- x[, i] / linst$ringcc
+		x <- x[, -which(names(x) == "Optical transmission"), drop = FALSE]
+		x <- x[, -which(names(x) == "Beam attenuation"), drop = FALSE]
+	}
+	attr(x, "type")  <- "cor"
+	x
 }
 
 #' Retrieve the LISST calibrated values
 #'
 #' The function retrieve the calibrated values (lisst object type 'cal') from 
-#' raw digital counts ('raw') or from corrected digital counts ('cor').
+#' raw digital counts ('raw'), corrected digital counts ('cor') or volume 
+#' scattering function ('vsf').
 #'
-#' @param lo A lisst object of type 'raw', 'cor' or 'cal'.
+#' @param x A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.
 #'
 #' @details When supplying a lisst 'raw' object, it must contain information on 
 #' background values and instrument specific calibration constants. This is the
 #' case when the 'raw' lisst object was created with zscat and sn arguments set
 #' through \code{read_lisst}.
 #'
-#' Note that the values are already de-attenuated from pure water extinction in
-#' 'cor' generation (precursor to 'cal').
-#'
 #' @export
 
-lgetcal <- function(lo) {
-	typ <- attr(lo, "type")
-	if(typ == 'cal')
-		return(lo)
-	if((!typ == 'raw' || typ == 'cor'))
-		stop("Calibrated units can only be retrieved from a 'raw' or 'cor' lisst object", call. = FALSE)
-	if(typ == 'raw') lo <- lgetcor(lo)
-	zscat <- attr(lo, "zscat")
-	linst <- attr(lo, "linst")
-	lmodl <- attr(lo, "lmodl")
+lgetcal <- function(x) {
+	typ <- attr(x, "type")
+	if(typ == 'cal') return(x)
+	else if(typ == 'raw') {
+		x <- lget(x, 'cor')
+		typ <- attr(x, "type")
+	}
+	else if(!(typ == 'cor' || typ == 'vsf'))
+		stop("Calibrated units can only be retrieved from a 'raw', 'cor' or 'vsf' lisst ",
+			"object", call. = FALSE)
 
-	tau <- lo[, "Laser transmission"] * zscat["Laser reference"] / 
-		zscat["Laser transmission"] / lo[, "Laser reference"]
+	zscat <- attr(x, "zscat")
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
 
-	lo[, "Laser transmission"]   <- lo[, "Laser transmission"] * linst$lpowcc[1] + linst$lpowcc[2]
-	lo[, "Battery voltage"]      <- lo[, "Battery voltage"] * linst$battcc[1] + linst$battcc[2]
-	lo[, "External input 1"]     <- lo[, "External input 1"] * linst$extrcc[1] + linst$extrcc[2]
-	lo[, "Laser reference"]      <- lo[, "Laser reference"] * linst$lrefcc[1] + linst$lrefcc[2]
-	lo[, "Depth"]                <- lo[, "Depth"] * linst$dpthcc[1] + linst$dpthcc[2]
-	lo[, "Temperature"]          <- lo[, "Temperature"] * linst$tempcc[1] + linst$tempcc[2]
-	lo[, "Optical transmission"] <- tau
-	lo[, "Beam attenuation"]     <- -log(tau) / lmodl$pl
-	lo[, 1:lmodl$nring] <- as.data.frame(set_units(as.matrix(lo[, 1:lmodl$nring]) * linst$ringcc, µW))
+	if(typ == 'cor') {
+		tau <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
+			zscat[, "Laser transmission"] / x[, "Laser reference"]
 
-	attr(lo, "type")  <- "cal"
-	return(lo)
+		x[, "Laser transmission"]   <- x[, "Laser transmission"] * linst$lpowcc[1] + linst$lpowcc[2]
+		x[, "Battery voltage"]      <- x[, "Battery voltage"]    * linst$battcc[1] + linst$battcc[2]
+		x[, "External input 1"]     <- x[, "External input 1"]   * linst$extrcc[1] + linst$extrcc[2]
+		x[, "Laser reference"]      <- x[, "Laser reference"]    * linst$lrefcc[1] + linst$lrefcc[2]
+		x[, "Depth"]                <- x[, "Depth"]              * linst$dpthcc[1] + linst$dpthcc[2]
+		x[, "Temperature"]          <- x[, "Temperature"]        * linst$tempcc[1] + linst$tempcc[2]
+		x[, "Optical transmission"] <- tau
+		x[, "Beam attenuation"]     <- set_units(drop_units(-log(tau) / lmodl$pl), 1/m)
+		for(i in 1:lmodl$nring) x[, i] <- set_units(x[, i] * linst$ringcc, µW)
+	} else {
+		wang  <- as.errors(c(lmodl$wang[1, 2], lmodl$wang[, 1]))
+		for(i in 1:lmodl$nring) 
+			x[, i] <- set_units(x[, i] * x[, "Laser reference"] * (set_quantities(pi, 1, 0) * lmodl$pl * 
+				set_units(wang[i]^2 - wang[i+1]^2, sr) / set_quantities(6, 1, 0)), µW)
+	}
+
+	attr(x, "type")  <- "cal"
+	x
 }
 
 #' Retrieve VSF from LISST data
 #'
-#' The function retrieves the absolute particle Volume Scattering Function 
-#' (1/m/sr) for LISST data.
+#' The function retrieves the particle Volume Scattering Function (1/m/sr) for 
+#' LISST data.
 #'
-#' @param lo A lisst object of type 'raw', 'cor' or 'cal'.
+#' @param x A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.
 #'
 #' @details Types 'raw' and 'cor' are converted to 'cal' first. The function 
 #' then normalizes the power (mW) measured by the ring detectors by their solid 
@@ -150,29 +252,28 @@ lgetcal <- function(lo) {
 #'
 #' @export
 
-lgetvsf <- function(lo) {
-
-	if(!is(lo, "lisst"))
-		stop("lo must be a lisst object", call. = FALSE)
-	if(attr(lo, "type") != "cal")
-		stop("lo must be a lisst object of type cal", call. = FALSE)
-
-	linst <- attr(lo, "linst")
-	lmodl <- attr(lo, "lmodl")
-
-	if(linst$mod == "100") {
-		wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
-		zscat <- attr(lo, "zscat")
-
-		for(i in 1:32)
-			lo[, i] <- set_units(lo[, i] / lo[, 36] / (pi * lmodl$pl * 
-				(wang[i]^2 - wang[i+1]^2) / 6), 1/m/sr)
-		attr(lo, "type") <- "vsf"
-		return(lo)
+lgetvsf <- function(x) {
+	typ <- attr(x, "type")
+	if(typ == 'vsf') return(x)
+	else if(typ == 'raw' || typ == 'cor') {
+		x <- lget(x, 'cal')
+		typ <- attr(x, "type")
 	}
-	if(ancd$mod == "m200") {
-		cat("To be added soon...")
-	}
+	else if(typ != "cal")
+		stop("VSF can only be retrieved from a 'raw', 'cor' or 'cal' lisst object", 
+			call. = FALSE)
+
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+	zscat <- attr(x, "zscat")
+
+	wang  <- as.errors(c(lmodl$wang[1, 2], lmodl$wang[, 1]))
+
+	for(i in 1:lmodl$nring)
+		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_quantities(pi, 1, 0) * lmodl$pl * 
+				(wang[i]^2 - wang[i+1]^2) / set_quantities(6, 1, 0)), 1/m/sr)
+	attr(x, "type") <- "vsf"
+	x
 }
 
 #' Retrieve PSD in number concentration
@@ -210,7 +311,7 @@ lgetpnc <- function(lo) {
 	linst <- attr(lo, "linst")
 	lmodl <- attr(lo, "lmodl")
 
-        bins  <- lmodl$binr[[linst$ity]]
+        bins  <- lmodl$binr[[lproc$ity]]
 	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
         binl  <- bins[, 2] - bins[, 1]
 	fact  <- 1 / nconc / binl
@@ -254,5 +355,4 @@ lgetvol <- function(lo) {
 	attr(lo, "type") <- "vol"
 	return(lo)
 }
-
 

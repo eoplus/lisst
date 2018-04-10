@@ -2,7 +2,7 @@
 #' Register a new LISST instrument
 #'
 #' Register a new LISST instrument by importing calibration data and storing it 
-#' convenient processing of LISST data.
+#' for convenient processing of LISST data.
 #'
 #' @param model The model of the LISST instrument (e.g., "100" for the LISST-100
 #'              and LISST-100X).
@@ -12,9 +12,10 @@
 #' @details For the LISST-100(X) the function expects that files follow the 
 #' naming convention for LISST installation files. Specifically, it will search 
 #' for a factory background file (factory_zsc_*.asc), a ring area file 
-#' (ringarea_*.asc), an instrument data file (InstrumentData.txt) and a LISST 
-#' SOP ini file (lisst.ini). All files should be in the same directory provided 
-#' in the path argument, and it should contain files for a single instrument.
+#' (ringarea_*.asc), an instrument data file (InstrumentData.txt) and a 
+#' LISST-SOP ini file (lisst.ini). All files should be in the same directory 
+#' provided in the path argument, and it should contain files for a single 
+#' instrument.
 #'
 #' @examples:
 #' path  <- system.file("extdata", package = "lisst")
@@ -76,15 +77,15 @@ lisst_reg <- function(model, path) {
 			dty = as.character(dat[, 2]),
 			X   = dat[, 5] == "X",
 			fzscat = zsc,
-			ringcf = rig,
-			ringcc = units::set_units(5, V) / 4096 / units::set_units(dat[, 3], V/W),
+			ringcf = quantities::set_quantities(rig, 1, 0),
+			ringcc = quantities::set_quantities(5 / 4096 / dat[, 3], W, 0),
 			volcc  = dat[, 4],
-			lpowcc = units::set_units(hk[grep("Laser Power", hkn), ], mW),
-			battcc = units::set_units(hk[grep("Battery", hkn), ], V),
-			extrcc = units::set_units(hk[grep("External Instrument", hkn), ], V),
-			lrefcc = units::set_units(hk[grep("Laser Reference", hkn), ], mW),
-			dpthcc = units::set_units(hk[grep("Depth", hkn), ], m),
-			tempcc = units::set_units(hk[grep("Temperature", hkn), ], `°C`)
+			lpowcc = quantities::set_quantities(hk[grep("Laser Power", hkn), ], mW, 0),
+			battcc = quantities::set_quantities(hk[grep("Battery", hkn), ], V, 0),
+			extrcc = quantities::set_quantities(hk[grep("External Instrument", hkn), ], V, 0),
+			lrefcc = quantities::set_quantities(hk[grep("Laser Reference", hkn), ], mW, 0),
+			dpthcc = quantities::set_quantities(hk[grep("Depth", hkn), ], m, 0),
+			tempcc = quantities::set_quantities(hk[grep("Temperature", hkn), ], `°C`, 0)
 		)
 
 		save(".LISSTi", file = system.file("R", "sysdata.rda", package = "lisst"))
@@ -134,7 +135,7 @@ lisst_reg <- function(model, path) {
 .LISSTm <- list(
 	"100"  = list(
 		mod   = "100",
-		pl    = units::set_units(0.05, m), 
+		pl    = quantities::set_quantities(0.05, m, 0), 
 		bnvar = 40, 
 		anvar = 42, 
 		nring = 32, 
@@ -186,7 +187,7 @@ lisst_reg <- function(model, path) {
 	), 
 	"200"  = list(
 		mod   = "200",
-		pl    = units::set_units(0.025, m), 
+		pl    = quantities::set_quantities(0.025, m, 0), 
 		bnvar = 59, 
 		anvar = 61, 
 		nring = 36, 
@@ -216,13 +217,13 @@ lisst_reg <- function(model, path) {
 	)
 )
 
-#' .LISSTi - A list of registered LISST instruments.
-#'
-#' Variables depend on model.
-
-.LISSTi <- list()
-
-save(.LISSTm, .LISSTi, file = system.file("R", "sysdata.rda", package = "lisst"))
-
-#' @import units
+# .LISSTi - A list of registered LISST instruments.
+#
+# Variables depend on model.
+#
+# On creation only:
+#
+# .LISSTi <- list()
+#
+# save(.LISSTm, .LISSTi, file = system.file("R", "sysdata.rda", package = "lisst"))
 

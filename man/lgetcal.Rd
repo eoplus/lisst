@@ -4,21 +4,19 @@
 \alias{lgetcal}
 \title{Retrieve the LISST calibrated values}
 \usage{
-lgetcal(lo)
+lgetcal(x)
 }
 \arguments{
-\item{lo}{A lisst object of type 'raw', 'cor' or 'cal'.}
+\item{x}{A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.}
 }
 \description{
 The function retrieve the calibrated values (lisst object type 'cal') from 
-raw digital counts ('raw') or from corrected digital counts ('cor').
+raw digital counts ('raw'), corrected digital counts ('cor') or volume 
+scattering function ('vsf').
 }
 \details{
 When supplying a lisst 'raw' object, it must contain information on 
 background values and instrument specific calibration constants. This is the
 case when the 'raw' lisst object was created with zscat and sn arguments set
 through \code{read_lisst}.
-
-Note that the values are already de-attenuated from pure water extinction in
-'cor' generation (precursor to 'cal').
 }

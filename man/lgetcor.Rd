@@ -4,14 +4,15 @@
 \alias{lgetcor}
 \title{Retrieve the LISST corrected digital counts}
 \usage{
-lgetcor(lo)
+lgetcor(x)
 }
 \arguments{
-\item{lo}{A lisst object of type 'raw', 'cor' or 'cal'.}
+\item{x}{A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.}
 }
 \description{
 The function retrieve the corrected digital counts (lisst object type 'cor')
-from raw digital counts ('raw') or from calibrated values ('cal').
+from raw digital counts ('raw'), calibrated values ('cal') or volume 
+scattering function ('vsf').
 }
 \details{
 When supplying a lisst 'raw' object, it must contain information on 
