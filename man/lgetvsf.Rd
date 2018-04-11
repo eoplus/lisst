@@ -21,8 +21,17 @@ entering the path (mW). Since when generating 'cor' the measured signal is
 already de-attenuated from pure water extinction, no additional correction is 
 necessary.
 }
+\examples{
+l_vsf <- lget(lgetraw(donkmeer_bin), 'vsf')
+all.equal(l_vsf, donkmeer_bin)
+
+}
 \references{
 Agrawal, Yogesh C. 2005. The optical volume scattering function: Temporal and 
 vertical variability in the water column off the New Jersey coast. Limnology 
 and Oceanography 50, 6, 1787-1794. DOI: 10.4319/lo.2005.50.6.1787
+}
+\seealso{
+\code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+\code{\link{lgetcal}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 }

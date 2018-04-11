@@ -14,7 +14,11 @@ The function retrieve the raw digital counts (lisst object type 'raw')
 from corrected digital counts ('cor'), calibrated values ('cal'), or  
 volume scattering function ('vsf').
 }
+\examples{
+l_raw <- lgetraw(donkmeer_bin)
+
+}
 \seealso{
-\code{\link{lgetcor}}, \code{\link{lgetval}}, \code{\link{lgetvsf}}, 
-\code{\link{lgetvol}}, \code{\link{lgetpnc}}
+\code{\link{lget}} \code{\link{lgetcor}}, \code{\link{lgetval}}, 
+\code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 }

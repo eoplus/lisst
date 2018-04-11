@@ -20,3 +20,11 @@ background values and instrument specific calibration constants. This is the
 case when the 'raw' lisst object was created with zscat and sn arguments set
 through \code{read_lisst}.
 }
+\examples{
+l_cal <- lgetcal(donkmeer_bin)
+
+}
+\seealso{
+\code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+\code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+}

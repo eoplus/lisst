@@ -20,24 +20,32 @@ lget dispatch the appropriate lgetxxx function acording to parameter
 type. As of this version is only possible to convert between 'raw', 'cor', 
 'cal' and 'vsf' or between 'vol' and 'pnc' (inversion not implemented). 
 \describe{
-  \item{raw}{The raw digital counts as recorded by the LISST instrument}
+  \item{raw}{The raw digital counts as recorded by the LISST instrument.}
   \item{cor}{The corrected digital counts, i.e., the raw counts de-attenuated 
              for the particle \strong{and water} extinction, background 
              subtracted and compensated for area deviations from nominal 
-             values}
+             values.}
   \item{cal}{The calibrated values, i.e., the instrument specific calibration 
              constants applied to the corrected values (for all variables). 
              Aditionally, the transmittance due to particles and the particle 
-             beam attenuation are added to the lisst object}
+             beam attenuation are added to the lisst object.}
   \item{vsf}{The volume scattering function, i.e., the calibrated values 
              normalized to incident power, the solid angle of the detectors 
-             and the path of water generating the signal}
+             and the path of water generating the signal.}
   \item{vol}{The particle volume concentration (ppm volume) per size bin, as 
-	inverted from the scattering data by the LISST-SOP}
-  \item{pnc}{The particle number concentration per volume and µm size. }
+	inverted from the scattering data by the LISST-SOP.}
+  \item{pnc}{The particle number concentration per volume and µm size.}
 }
 
 See the documentation of the lget functions for further details.
+}
+\examples{
+l_vsf <- donkmeer_bin
+l_cal <- lget(l_vsf, 'cal')
+l_cor <- lget(l_vsf, 'cor')
+l_raw <- lget(l_vsf, 'raw')
+l_vsf <- lget(l_raw, 'vsf')
+
 }
 \seealso{
 \code{\link{lgetraw}}, \code{\link{lgetcor}}, \code{\link{lgetcal}},

@@ -6,6 +6,9 @@
 \usage{
 \method{c}{lisst}(...)
 }
+\arguments{
+\item{...}{lisst objects to concatenate.}
+}
 \value{
 A lisst object with type equal to the first argument and containing 
 data from all arguments.

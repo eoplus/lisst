@@ -16,3 +16,8 @@ exception of those that contain time information.
 \description{
 Drop lisst class and attributes.
 }
+\examples{
+x <- drop_lisst(donkmeer_bin)
+attributes(x)
+
+}

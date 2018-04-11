@@ -3,7 +3,7 @@
 # This was mainly created for use in the c.lisst function.
 
 .lattributes <- function(x) {
-	attributes(x)[c('type', 'lproc', 'linst', 'lmodl', 'zscat', 'lxts')]
+	attributes(x)[c('type', 'lproc', 'linst', 'lmodl', 'zscat')]
 }
 
 #' Concatenate lisst objects
@@ -12,6 +12,8 @@
 #' object. Checks are made to ensure the final object is coherent (same 
 #' instrument and inversion type, if applicable) and conversion between types is
 #' made as necessary. See details.
+#'
+#' @param ... lisst objects to concatenate.
 #' 
 #' @details The first lisst object is taken as reference, i.e., all subsequent 
 #' lisst objects will be converted to its type ('raw', 'cor', 'cal', 'vsf', 
@@ -31,6 +33,9 @@
 
 c.lisst <- function(...) {
 	x   <- list(...)
+	for(i in 1:length(x)) {
+		if(!is.lisst(x[[1]])) stop(paste("Argument", i, "is not a lisst object"), call. = F)
+	}
 	typ <- attr(x[[1]], "type")
 	x   <- lapply(x, lget, type = typ)
 	for(i in 2:length(x)) {
@@ -46,17 +51,30 @@ c.lisst <- function(...) {
 #' 
 #' Performs subsetting by index, depth or time.
 #'
+#' @param i An integer vector, a time object (e.g., POSIXct), or a character 
+#' string specifying deph range (in meters) or time range in the ISO 8601 
+#' format.
+#' @param j An integer vector or a character string to macth a column name.
+#'
 #' @details Subseting can be done by sample index using a vector of integers, 
 #' by depth using a string of the form 'depth1|depth2', or by time using a time 
 #' object vector (e.g. POSIXct) or a caracter string in the format of ISO 8601.
 #' The time subsetting actully uses the xts subsetting functions, see 
-#' \code{?xts::`[.xts`} for details.
+#' \code{?`[.xts`} for details.
 #'
 #' @examples
+#' donkmeer_bin[1:3, ]         # First three samples
+#' donkmeer_bin['0|5', ]       # First five meters
+#' donkmeer_bin['2018-03', ]   # Samples for march 2018
+#' donkmeer_bin['2017-06/2018-06', ] # Samples between June 2017 to June 2018
+#'
+#' @seealso \code{`[.xts`}
 #'
 #' @export
 
 `[.lisst` <- function(x, i, j, ..., drop = TRUE) {
+	stopifnot(is.lisst(x))
+	lxts <- xts(rep(1, nrow(x)), order.by = x$Time, unique = FALSE)
 	if(!missing(i)) {
 		if(is.character(i)) {
 			if(length(i) > 1) {
@@ -67,25 +85,26 @@ c.lisst <- function(...) {
 				depth <- drop_quantities(x$Depth)
 				i <- which(depth >= range[1] & depth < range[2])
 			} else {
-				lxts <- attr(x, "lxts")
 				i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
 			}
 		} else if(xts::timeBased(i)) {
-			lxts <- attr(x, "lxts")
 			i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
 		}
 	}
 	if(((missing(i) && length(j) == 1) || (missing(j) && length(i) == 1)) && drop) {
 		#x <- drop_lisst(x)
-		NextMethod(drop = drop)
+		x <- NextMethod(drop = drop)
 	} else {
-		structure(NextMethod(drop = drop), 
-			"type" = attr(x, "type"),
+		x <- NextMethod(drop = drop)
+		lxts <- lxts[i, ]
+		structure(x, 
+			"type"  = attr(x, "type"),
 			"lproc" = attr(x, "lproc"),
 			"linst" = attr(x, "linst"),
 			"lmodl" = attr(x, "lmodl"),
 			"zscat" = attr(x, "zscat"),
-			class = c("lisst", "data.frame"))
+#			"lxts"  = lxts,
+			class   = c("lisst", "data.frame"))
 	}
 }
 
@@ -101,24 +120,31 @@ c.lisst <- function(...) {
 #' type. As of this version is only possible to convert between 'raw', 'cor', 
 #' 'cal' and 'vsf' or between 'vol' and 'pnc' (inversion not implemented). 
 #' \describe{
-#'   \item{raw}{The raw digital counts as recorded by the LISST instrument}
+#'   \item{raw}{The raw digital counts as recorded by the LISST instrument.}
 #'   \item{cor}{The corrected digital counts, i.e., the raw counts de-attenuated 
 #'              for the particle \strong{and water} extinction, background 
 #'              subtracted and compensated for area deviations from nominal 
-#'              values}
+#'              values.}
 #'   \item{cal}{The calibrated values, i.e., the instrument specific calibration 
 #'              constants applied to the corrected values (for all variables). 
 #'              Aditionally, the transmittance due to particles and the particle 
-#'              beam attenuation are added to the lisst object}
+#'              beam attenuation are added to the lisst object.}
 #'   \item{vsf}{The volume scattering function, i.e., the calibrated values 
 #'              normalized to incident power, the solid angle of the detectors 
-#'              and the path of water generating the signal}
+#'              and the path of water generating the signal.}
 #'   \item{vol}{The particle volume concentration (ppm volume) per size bin, as 
-#'		inverted from the scattering data by the LISST-SOP}
-#'   \item{pnc}{The particle number concentration per volume and µm size. }
+#'		inverted from the scattering data by the LISST-SOP.}
+#'   \item{pnc}{The particle number concentration per volume and µm size.}
 #' }
 #' 
 #' See the documentation of the lget functions for further details.
+#'
+#' @examples
+#' l_vsf <- donkmeer_bin
+#' l_cal <- lget(l_vsf, 'cal')
+#' l_cor <- lget(l_vsf, 'cor')
+#' l_raw <- lget(l_vsf, 'raw')
+#' l_vsf <- lget(l_raw, 'vsf')
 #'
 #' @seealso \code{\link{lgetraw}}, \code{\link{lgetcor}}, \code{\link{lgetcal}},
 #' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
@@ -126,6 +152,7 @@ c.lisst <- function(...) {
 #' @export
 
 lget <- function(x, type) {
+	stopifnot(is.lisst(x))
 	switch(type, 
 		"raw" = lgetraw(x),
 		"cor" = lgetcor(x),
@@ -145,12 +172,16 @@ lget <- function(x, type) {
 #'
 #' @param x A lisst object of type 'raw', 'cor', 'cal' or 'vsf'.
 #'
-#' @seealso \code{\link{lgetcor}}, \code{\link{lgetval}}, \code{\link{lgetvsf}}, 
-#' \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#' @examples
+#' l_raw <- lgetraw(donkmeer_bin)
+#'
+#' @seealso \code{\link{lget}} \code{\link{lgetcor}}, \code{\link{lgetval}}, 
+#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 #'
 #' @export
 
 lgetraw <- function(x) {
+	stopifnot(is.lisst(x))
 	typ <- attr(x, "type")
 	if(typ == 'raw')
 		return(x)
@@ -199,9 +230,16 @@ lgetraw <- function(x) {
 #' taken from the Water Optical Properties Processor (WOPP) and correspond to 
 #' 0.439 and 5.808e-4 1/m, respectivelly.
 #'
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetval}}, 
+#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#'
+#' @examples
+#' l_cor <- lgetcor(donkmeer_bin)
+#'
 #' @export
 
 lgetcor <- function(x) {
+	stopifnot(is.lisst(x))
 	typ <- attr(x, "type")
 	if(typ == 'cor') return(x)
 	else if(typ == 'vsf') {
@@ -261,9 +299,16 @@ lgetcor <- function(x) {
 #' case when the 'raw' lisst object was created with zscat and sn arguments set
 #' through \code{read_lisst}.
 #'
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#'
+#' @examples
+#' l_cal <- lgetcal(donkmeer_bin)
+#'
 #' @export
 
 lgetcal <- function(x) {
+	stopifnot(is.lisst(x))
 	typ <- attr(x, "type")
 	if(typ == 'cal') return(x)
 	else if(typ == 'raw') {
@@ -321,9 +366,17 @@ lgetcal <- function(x) {
 #' vertical variability in the water column off the New Jersey coast. Limnology 
 #' and Oceanography 50, 6, 1787-1794. DOI: 10.4319/lo.2005.50.6.1787
 #'
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+#' \code{\link{lgetcal}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#'
+#' @examples
+#' l_vsf <- lget(lgetraw(donkmeer_bin), 'vsf')
+#' all.equal(l_vsf, donkmeer_bin)
+#'
 #' @export
 
 lgetvsf <- function(x) {
+	stopifnot(is.lisst(x))
 	typ <- attr(x, "type")
 	if(typ == 'vsf') return(x)
 	else if(typ == 'raw' || typ == 'cor') {
@@ -352,7 +405,7 @@ lgetvsf <- function(x) {
 #' The function converts the PSD in volume concentration (µL/L, ppm) to number 
 #' concentration (particle/L/µm).
 #'
-#' @param lo A lisst object of type 'vol'.
+#' @param x A lisst object of type 'vol'.
 #'
 #' @details Volume concentration is converted to number concentration by using 
 #' the volume of a sphere with radius equal to half the median particle size
@@ -368,29 +421,35 @@ lgetvsf <- function(x) {
 #' estuarine surface waters. J. Geophys. Res., 115, C10028. 
 #' DOI:10.1029/2010JC006256.
 #'
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetpnc}}
+#'
+#' @examples
+#' l_pnc <- lgetpnc(donkmeer_pro)
+#'
 #' @export
 
-lgetpnc <- function(lo) {
-	if(!is(lo, "lisst"))
-		stop("lo must be a lisst object", call. = FALSE)
-	typ <- attr(lo, "type")
-	if(typ == "pnc")
-		return(lo)
+lgetpnc <- function(x) {
+	stopifnot(is.lisst(x))
+	typ <- attr(x, "type")
+	if(typ == "pnc") return(x)
 	if(typ != "vol")
-		stop("lo must be a lisst object of type 'vol'", call. = FALSE)
+		stop("Particle number concentration can only be retrieved a 'vol' lisst object", 
+			call. = FALSE)
 
-	linst <- attr(lo, "linst")
-	lmodl <- attr(lo, "lmodl")
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+	lproc <- attr(x, "lproc")
 
         bins  <- lmodl$binr[[lproc$ity]]
-	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
-        binl  <- bins[, 2] - bins[, 1]
-	fact  <- 1 / nconc / binl
+	nconc <- set_quantities(4 * pi * (bins[, 3] / 2)^3 / 3, L, 0)
+        binl  <- set_errors(bins[, 2] - bins[, 1], 0)
+	fact  <- nconc^-1 * binl^-1
 	for(i in 1:lmodl$nring) {
-		lo[, i] <- units::set_units(lo[, i] * fact[i] , 1/L/µm)
+		x[, i] <- set_units(x[, i] * fact[i] , 1/L/µm)
 	}
-	attr(lo, "type") <- "pnc"
-	return(lo)
+	attr(x, "type") <- "pnc"
+	x
 }
 
 #' Retrieve PSD in volume concentration
@@ -398,32 +457,40 @@ lgetpnc <- function(lo) {
 #' The function converts the PSD in particle concentration (particle/L/µm) back 
 #' to the original data in volume concentration (µL/L, ppm).
 #'
-#' @param lo A lisst object of type 'pnc'.
+#' @param x A lisst object of type 'pnc'.
 #'
 #' @details It merelly reverts the multiplication factors used by \code{lgetpnc}.
 #'
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}}
+#'
+#' @examples
+#' l_vol <- lget(lgetpnc(donkmeer_pro), 'vol')
+#' all.equal(l_vol, donkmeer_pro)
+#'
 #' @export
 
-lgetvol <- function(lo) {
-	if(!is(lo, "lisst"))
-		stop("lo must be a lisst object", call. = FALSE)
-	typ <- attr(lo, "type")
-	if(typ == "vol")
-		return(lo)
+lgetvol <- function(x) {
+	stopifnot(is.lisst(x))
+	typ <- attr(x, "type")
+	if(typ == "vol") return(x)
 	if(typ != "pnc")
-		stop("lo must be a lisst object of type 'pnc'", call. = FALSE)
+		stop("Particle volume concentration can only be retrieved from a 'pnc' lisst ",
+			"object", call. = FALSE)
 
-	linst <- attr(lo, "linst")
-	lmodl <- attr(lo, "lmodl")
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+	lproc <- attr(x, "lproc")
 
-        bins  <- lmodl$binr[[linst$ity]]
-	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
-        binl  <- bins[, 2] - bins[, 1]
-	fact  <- 1 / nconc / binl
+        bins  <- lmodl$binr[[lproc$ity]]
+	nconc <- set_quantities(4 * pi * (bins[, 3] / 2)^3 / 3, L, 0)
+        binl  <- set_errors(bins[, 2] - bins[, 1], 0)
+	fact  <- nconc^-1 * binl^-1
 	for(i in 1:lmodl$nring) {
-		lo[, i] <- units::set_units(lo[, i] / fact[i] , ppm)
+#		x[, i] <- set_units(x[, i] / fact[i], ppm) # Error; seems a bug in the development version of units...
+		x[, i] <- set_units(drop_units(x[, i] / fact[i]) * 1e6, ppm)
 	}
-	attr(lo, "type") <- "vol"
-	return(lo)
+	attr(x, "type") <- "vol"
+	return(x)
 }
 

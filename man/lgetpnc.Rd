@@ -4,10 +4,10 @@
 \alias{lgetpnc}
 \title{Retrieve PSD in number concentration}
 \usage{
-lgetpnc(lo)
+lgetpnc(x)
 }
 \arguments{
-\item{lo}{A lisst object of type 'vol'.}
+\item{x}{A lisst object of type 'vol'.}
 }
 \description{
 The function converts the PSD in volume concentration (µL/L, ppm) to number 
@@ -22,9 +22,17 @@ particles are not spherical, but as long as the particles are not expected to
 significantly change shape with size, the slope of the distribution will be 
 accurate.
 }
+\examples{
+l_pnc <- lgetpnc(donkmeer_pro)
+
+}
 \references{
 Buonassissi, C. J. and Dierssen, H. M. 2010. A regional comparison of 
 particle size distributions and the power law approximation in oceanic and 
 estuarine surface waters. J. Geophys. Res., 115, C10028. 
 DOI:10.1029/2010JC006256.
+}
+\seealso{
+\code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+\code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetpnc}}
 }

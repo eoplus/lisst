@@ -1,31 +1,28 @@
-# TODO
-# add an subset and apply function that preserves structure, units and attributes.
 
 #' Fit a PSD model to the lisst data
 #'
 #' The function performs a fit of the available models of PSD.
 #' 
-#' @param lo   A PSD ('vol' or 'pnc') lisst object.
-#' @param type Curently ignored.
+#' @param x     A PSD ('vol' or 'pnc') lisst object.
+#' @param model Curently ignored. Only Junge model implemented.
 #'
 #' @export
 
+lfit <- function(x, type) {
+	stopifnot(is.lisst(x))
+	typ <- attr(x, 'type')
+	if(!(typ == 'vol' || typ == 'pnc'))
+		stop("A PSD model fit can only be performed in a 'vol' or 'pnc' lisst object", 
+			call. = FALSE)
+	x <- lget(x, 'pnc')
 
-lgetfit <- function(lo, type) {
-	if(!is(lo, "lisst"))
-		stop("lo must be a lisst object", call. = FALSE)
-	typ <- attr(lo, "type")
-	if(!(typ == "vol" || typ == "pnc"))
-		stop("lo must be a PSD ('vol' or 'pnc') lisst object", call. = FALSE)
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+	lproc <- attr(x, "lproc")
 
-	if(typ == "vol") lo <- lgetpnc(lo)
-
-	linst <- attr(lo, "linst")
-	lmodl <- attr(lo, "lmodl")
-
-	bins  <- as.numeric(lmodl$binr[[linst$ity]][, 3])
-	junge <- numeric(nrow(lo))
-	mat   <- as.matrix(lo[, 1:lmodl$nring])
+	bins  <- as.numeric(lmodl$binr[[lproc$ity]][, 3])
+	junge <- numeric(nrow(x))
+	mat   <- as.matrix(drop_errors(x[, 1:lmodl$nring]))
 	id    <- which(mat[, 1] != 0)
 	for(i in id) {
 		jfit <- lm(log10(mat[i, ])~log10(bins))
@@ -34,68 +31,61 @@ lgetfit <- function(lo, type) {
 	return(junge)
 }
 
+#' Descriptive statistics for lisst objects
+#'
+#' The functions calculate the average or the median per variable of a lisst 
+#' object, for the whole data or in intervals. The dispersion of the dataset or
+#' intervals is also retrieved and stored.
+#'
+#' @param x    A lisst object.
+#' @param brks A vector with the breaks (intervals) for the aggregation. See 
+#'             details.
+#' @param fun  A function to perform the aggregation (mean or median). Defaults 
+#'             to mean.
+#' @param ...  Arguments to be passed to aggregation functions.
+#'
+#' @details 
+#' The breaks (intervals) are passed directly to the subset function, so must 
+#' now be supplied in final form.
+#'
+#' The measure of dispersion in the aggregated data depends on the measure of 
+#' center. For the mean the dispersion is the standard deviation and for the 
+#' median it is 1.252 * the standard deviation of the mean, as derived from the 
+#' asymptotic variance formula of the median. See \code{?mean.errors} for 
+#' details.
+#'
+#' @examples
+#' 
+#'
+#' @export
 
-# If any kind of mean is made, is important to provide back the n in each class and the variability.
-# should keep breaks as well...
+lstat <- function(x, brks, fun = 'mean', ...) {
+	stopifnot(is.lisst(x))
+	if(missing(brks)) stop("brks missing, with no default", call. = FALSE)
+	if(missing(fun)) fun <- 'mean'
+	else if(!(fun == 'mean' || fun == 'weighted.mean' || fun == 'median'))
+		stop("fun must be 'mean', 'weighted.mean' or 'median'", call. = FALSE)
 
-lgetstat <- function(lo, Depth, Time) {
-	if(!missing(Depth) && !missing(Time))
-		stop("Depth and Time cannot be specified at the same time", call. = FALSE)
-	if(missing(Depth) && missing(Time)) Depth <- range(lo$Depth)
-	else if(!is.numeric(Depth))
-		stop("depth must be numeric", call. = FALSE)
-	else if(length(Depth) < 2)
-		stop("depth must have length greater than 1", call. = FALSE)
-	else if(any(is.na(Depth)))
-		stop("NAs not allowed in depth argument", call. = FALSE)
-	else
-		units(Depth) <- "m"
-	param <- "Depth"
-
-	if(!missing(Time)) {
-		if(length(Time) < 2)
-			stop("time must have length greater than 1", call. = FALSE)
-		else if(any(is.na(Time)))
-			stop("NAs not allowed in time argument", call. = FALSE)
-		else if(!is(Time, "POSIXct")) Time <- as.POSIXct(Time)
-		param <- "Time"
-	}
-
-	idx <- numeric(nrow(lo))
-	for(i in 1:length(Depth)) {
-		idx <- idx + (lo[, param] > get(param)[i])
-	}
-	lom <- los <- lo[1:max(idx), ]
-	for(i in 1:max(idx)) {
-		id <- idx == i
-		lom[i, ] <- lgetmean(subset(lo, id))
-		los[i, ] <- lgetsd(subset(lo, id))
-	}
-	blon <- by(lo[id0, ], idx[id0], nrow)
-
-	lmodl <- attr(lo, "lmodl")
-	lom <- lo[1:length(blom), , drop = FALSE]
-	los <- matrix(NA, ncol = ncol(lo), nrow = length(blom))
-	colnames(los) <- c(lmodl$lvarn, "Time")
-	for(i in 1:length(bylom)) {	
-		lom[i, ] <- bylom[[i]]
-		los[i, ] <- t(bylos[[i]])
-	}
-	attr(lom, "lproc") <- c(attr(lom, "lproc"), list(sd = los, n = as.vector(bylon)))
-	lom
+	xl <- list()
+	for(i in 1:length(brks)) xl[[i]] <- x[brks[[i]], ]
+	xb <- do.call(rbind, lapply(xl, fun, ...))
+	rownames(xb) <- 1:nrow(xb)
+	xb
 }
 
-
-lgetmean <- function(lo) {
-	lom <- lo[1, , drop = FALSE]
-	lom[1, ] <- as.data.frame(sapply(lo, mean, simplify = F))
-	lom
+#' @describeIn lstat Compute the mean for lisst objects
+mean.lisst <- function(x, ...) {
+	stopifnot(is.lisst(x))
+	xm <- x[1, , drop = FALSE]
+	xm[1, ] <- as.data.frame(sapply(x, mean, ..., simplify = F))
+	xm
 }
 
-lgetsd <- function(lo) {
-	unlist(sapply(lo, sd, simplify = F))
+#' @describeIn lstat Compute the median for lisst objects
+median.lisst <- function(x, ...) {
+	stopifnot(is.lisst(x))
+	xm <- x[1, , drop = FALSE]
+	xm[1, ] <- as.data.frame(sapply(x, median, ..., simplify = F))
+	xm
 }
 
-#
-# Function: getnconc
-#

@@ -24,9 +24,61 @@ visualize data recorded by the Laser In-Situ Scattering and Transmissometry
 created to have a single frame work of functions and structures to work with 
 different LISST models, simplifying analysis task when dealing with multiple
 instruments or upgrade to a new model. The [oce](https://cran.r-project.org/package=oce) 
-package also has functions for analysis of LISST data, but is limited to the 
+pakage provides function for visualition of LISST data, but is limited to the 
 LISST-100(X) and to processed data (particle size distribution) as produced by 
-the LISST-SOP.
+the LISST-SOP and don't include specific processing or subsetting utilities.
+
+## Quick overall demonstration
+
+The following chapters will better describe the functionalities, but here is a 
+quick overview from first time registering an instrument to the final plot of the
+desired quantity.
+
+```{r}
+# Register the LISST instrument:
+path  <- system.file("extdata", package = "lisst")
+model <- 100
+lisst_reg(model, path)
+
+# Read a LISST data file:
+sn    <- 1298
+pl    <- 0.05
+yr    <- 2018 
+zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst") # LISST-SOP processed file
+flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")    # LISST binary file
+
+lop   <- read_lisst(flp, sn, pl, zscat, yr)
+lob   <- read_lisst(flb, sn, pl, zscat, yr)
+
+# Subset by sample, deth or time:
+lob_ss <- lob[1:3, ]         # First three samples
+lob_ss <- lob['0|5', ]       # First five meters
+lob_ss <- lob['2018-03', ]   # Samples in march 2018
+
+# Conversion between data types:
+lop_pnc <- lget(lop, 'pnc')
+lob_cal <- lget(lob, 'cal')
+
+# Concatenation:
+lop_d <- c(lop, lop_pnc)
+
+# Statistics:
+#lob_mn <- lgetstat(lob, mean)
+#lob_md <- lgetstat(lob, media)
+#breaks <- c(0, 5, 10, 15)
+#lob_mn <- lgetstat(lob, mean, s = breaks) # Breaks by sample index
+#lob_mn <- lgetstat(lob, mean, d = breaks) # Breaks by sample depths
+#breaks <- c("2018-01", "2018-02", "2018-03", "2018-04")
+#lob_mn <- lgetstat(lob, mean, t = breaks) # Breaks by sample time
+ 
+# Plots:
+# par(mfcol = c(2, 2))
+# plot(lob[40:144, ])
+# plot(lop[40:144, ], type = 'pnc')
+# plot(lob[40:144, ], type = 'pf', xu = 'degree')
+# plot(lop[40:144, ], type = 'vol')
+```
 
 ## Reading data
 

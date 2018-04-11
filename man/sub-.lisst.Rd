@@ -6,6 +6,13 @@
 \usage{
 \method{[}{lisst}(x, i, j, ..., drop = TRUE)
 }
+\arguments{
+\item{i}{An integer vector, a time object (e.g., POSIXct), or a character 
+string specifying deph range (in meters) or time range in the ISO 8601 
+format.}
+
+\item{j}{An integer vector or a character string to macth a column name.}
+}
 \description{
 Performs subsetting by index, depth or time.
 }
@@ -14,8 +21,15 @@ Subseting can be done by sample index using a vector of integers,
 by depth using a string of the form 'depth1|depth2', or by time using a time 
 object vector (e.g. POSIXct) or a caracter string in the format of ISO 8601.
 The time subsetting actully uses the xts subsetting functions, see 
-\code{?xts::`[.xts`} for details.
+\code{?`[.xts`} for details.
 }
 \examples{
+donkmeer_bin[1:3, ]         # First three samples
+donkmeer_bin['0|5', ]       # First five meters
+donkmeer_bin['2018-03', ]   # Samples for march 2018
+donkmeer_bin['2017-06/2018-06', ] # Samples between June 2017 to June 2018
 
+}
+\seealso{
+\code{`[.xts`}
 }

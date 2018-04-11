@@ -220,16 +220,15 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			stop("LISST-200X binary files must have a .RBN extension", call. = FALSE)
 		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, 
 			lmodl = lmodl)
+		lo$Time <- .lgdate(lo, yr, guess)
 		lo <- lget(lo, out)
 	} else {
 		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, 
 			lmodl = lmodl)
+		lo$Time <- .lgdate(lo, yr, guess)
 		if(out == 'pnc') lo <- lgetpnc(lo)
 	}
 
-	lo$Time <- .lgdate(lo, yr, guess)
-	lxts    <- xts(rep(1, length(lo$Time)), order.by = lo$Time)
-	lo      <- structure(lo, lxts = lxts)
 	return(lo)
 }
 
@@ -343,6 +342,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 
 .lgdate <- function(lo, yr, guess = FALSE) {
 	lmodl <- attr(lo, "lmodl")
+	lo    <- drop_lisst(lo) 
 	if(lmodl$mod == "100") {
 		julian <- floor(lo[, 39] / 100)
 		id <- which(diff(julian) <= -364)

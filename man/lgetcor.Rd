@@ -28,3 +28,11 @@ scattering. Values for the pure water absorption and scattering at 670 nm are
 taken from the Water Optical Properties Processor (WOPP) and correspond to 
 0.439 and 5.808e-4 1/m, respectivelly.
 }
+\examples{
+l_cor <- lgetcor(donkmeer_bin)
+
+}
+\seealso{
+\code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetval}}, 
+\code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+}
