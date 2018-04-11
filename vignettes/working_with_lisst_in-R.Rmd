@@ -36,32 +36,32 @@ desired quantity.
 
 ```{r}
 # Register the LISST instrument:
-path  <- system.file("extdata", package = "lisst")
-model <- 100
-lisst_reg(model, path)
+#path  <- system.file("extdata", package = "lisst")
+#model <- 100
+#lisst_reg(model, path)
 
 # Read a LISST data file:
-sn    <- 1298
-pl    <- 0.05
-yr    <- 2018 
-zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
-flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst") # LISST-SOP processed file
-flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")    # LISST binary file
+#sn    <- 1298
+#pl    <- 0.05
+#yr    <- 2018 
+#zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+#flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst") # LISST-SOP processed file
+#flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")    # LISST binary file
 
-lop   <- read_lisst(flp, sn, pl, zscat, yr)
-lob   <- read_lisst(flb, sn, pl, zscat, yr)
+#lop   <- read_lisst(flp, sn, pl, zscat, yr)
+#lob   <- read_lisst(flb, sn, pl, zscat, yr)
 
 # Subset by sample, deth or time:
-lob_ss <- lob[1:3, ]         # First three samples
-lob_ss <- lob['0|5', ]       # First five meters
-lob_ss <- lob['2018-03', ]   # Samples in march 2018
+#lob_ss <- lob[1:3, ]         # First three samples
+#lob_ss <- lob['0|5', ]       # First five meters
+#lob_ss <- lob['2018-03', ]   # Samples in march 2018
 
 # Conversion between data types:
-lop_pnc <- lget(lop, 'pnc')
-lob_cal <- lget(lob, 'cal')
+#lop_pnc <- lget(lop, 'pnc')
+#lob_cal <- lget(lob, 'cal')
 
 # Concatenation:
-lop_d <- c(lop, lop_pnc)
+#lop_d <- c(lop, lop_pnc)
 
 # Statistics:
 #lob_mn <- lgetstat(lob, mean)
@@ -95,9 +95,9 @@ deals only with the object. Here is an example on how to register a LISST, for t
 LISST-100X SN1298:
 
 ```{r}
-path  <- system.file("extdata", package = "lisst")
-model <- 100
-lisst_reg(model, path)
+#path  <- system.file("extdata", package = "lisst")
+#model <- 100
+#lisst_reg(model, path)
 ```
 
 The registration need only to be done once, and is saved to the package data, 
@@ -108,18 +108,18 @@ LISST is registered, reading an data file is simple and can be performed in
 diferent ways:
 
 ```{r}
-sn    <- 1298
-pl    <- 0.05
-yr    <- 2018 
-zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+#sn    <- 1298
+#pl    <- 0.05
+#yr    <- 2018 
+#zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
 
 # For a processed file:
-flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
-lop   <- read_lisst(flp, sn, pl, zscat, yr)
+#flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+#lop   <- read_lisst(flp, sn, pl, zscat, yr)
 
 # For a binary file:
-flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
-lob   <- read_lisst(flb, sn, pl, zscat, yr)
+#flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
+#lob   <- read_lisst(flb, sn, pl, zscat, yr)
 ```
 
 As the example shows, the function will determine the file type automaticly, 
@@ -136,7 +136,7 @@ a file for an instrument that is not registered - this is limited to the same
 cases when zscat can be omitted, and instead of providing sn, a model is sufficient.
 
 ```{r}
-lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
+#lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
 ```
 As a final note, when reading a processed file or when reading a binary file as 
 calibrated units (out = 'cal', the default for binary files) the lisst object will
@@ -154,8 +154,8 @@ attenuation are corrected to add effect of pure water. A correction is also
 applied in the rings digital counts for the binary data.
 
 ```{r}
-lop[15, , drop = FALSE]
-lob[15, , drop = FALSE]
+#lop[15, , drop = FALSE]
+#lob[15, , drop = FALSE]
 ```
 
 ## Processing
@@ -169,12 +169,12 @@ Function form the calibrated values.
 
 ```{r}
 # Converting from vol conc to n conc:
-lop[15, 1:3, drop = FALSE]
-lgetpnc(lop)[15, 1:3, drop = FALSE]
+#lop[15, 1:3, drop = FALSE]
+#lgetpnc(lop)[15, 1:3, drop = FALSE]
 
 # Converting from cal to VSF:
-lob[15, 1:3, drop = FALSE]
-lgetvsf(lob)[15, 1:3, drop = FALSE]
+#lob[15, 1:3, drop = FALSE]
+#lgetvsf(lob)[15, 1:3, drop = FALSE]
 ```
 
 Is also possible to extract PSD model parameters. At the curent version, only the
@@ -182,7 +182,7 @@ Junge model is available:
 
 ```{r}
 # Extract the Junge slope for a PSD:
-lgetfit(lop)[15:17]
+#lgetfit(lop)[15:17]
 ```
 
 ## Visualizing
@@ -196,10 +196,10 @@ VSF, the approximate particle phase function (normalization by c, not b), the nu
 concentration and the volume concentration.
 
 ```{r}
-lov <- lgetvsf(lob)
-par(mfcol = c(2, 2))
-plot(lov[40:144, ])
-plot(lop[40:144, ], type = 'pnc')
-plot(lov[40:144, ], type = 'pf', xu = 'degree')
-plot(lop[40:144, ], type = 'vol')
+#lov <- lgetvsf(lob)
+#par(mfcol = c(2, 2))
+#plot(lov[40:144, ])
+#plot(lop[40:144, ], type = 'pnc')
+#plot(lov[40:144, ], type = 'pf', xu = 'degree')
+#plot(lop[40:144, ], type = 'vol')
 ```
