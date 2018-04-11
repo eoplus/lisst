@@ -33,6 +33,8 @@ quick overview from first time registering an instrument to the final plot of th
 desired quantity.
 
 ```{r}
+library(lisst)
+
 # Register the LISST instrument:
 path  <- system.file("extdata", package = "lisst")
 model <- 100
