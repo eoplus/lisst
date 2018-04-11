@@ -228,6 +228,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	}
 
 	lo$Time <- .lgdate(lo, yr, guess)
+	lxts    <- xts(rep(1, length(lo$Time)), order.by = lo$Time)
+	lo      <- structure(lo, lxts = lxts)
 	return(lo)
 }
 
@@ -264,7 +266,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	id <- setdiff(lmodl$lvarn, c("Time1","Time2","Year","Month","Day","Hour","Minute","Second"))
 	id <- which(lmodl$lvarn %in% id)
 	for(i in id) {
-		quantities(lo[, i]) <- list(1, 0)
+		quantities(lo[, i]) <- list(lmodl$varun[i], 0)
 		if(i < lmodl$bnvar) quantities(zscatd[, i]) <- list(1, 0)
 	}
 

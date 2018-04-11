@@ -2,10 +2,20 @@
 % Please edit documentation in R/manipulate.R
 \name{[.lisst}
 \alias{[.lisst}
-\title{Subsenting of lisst objects}
+\title{Subset lisst objects}
 \usage{
 \method{[}{lisst}(x, i, j, ..., drop = TRUE)
 }
 \description{
-Performs subsetting of keeping the attributes of the lisst object.
+Performs subsetting by index, depth or time.
+}
+\details{
+Subseting can be done by sample index using a vector of integers, 
+by depth using a string of the form 'depth1|depth2', or by time using a time 
+object vector (e.g. POSIXct) or a caracter string in the format of ISO 8601.
+The time subsetting actully uses the xts subsetting functions, see 
+\code{?xts::`[.xts`} for details.
+}
+\examples{
+
 }

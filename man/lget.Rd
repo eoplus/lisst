@@ -17,7 +17,7 @@ This set of functions allow for the convertion between lisst data types.
 }
 \details{
 lget dispatch the appropriate lgetxxx function acording to parameter 
-type. As of this versions is only possible to convert between 'raw', 'cor', 
+type. As of this version is only possible to convert between 'raw', 'cor', 
 'cal' and 'vsf' or between 'vol' and 'pnc' (inversion not implemented). 
 \describe{
   \item{raw}{The raw digital counts as recorded by the LISST instrument}
@@ -40,6 +40,6 @@ type. As of this versions is only possible to convert between 'raw', 'cor',
 See the documentation of the lget functions for further details.
 }
 \seealso{
-\code{\link{lgetraw}}, \code{\link{lgetcor}}, \code{\link{lgetval}},
+\code{\link{lgetraw}}, \code{\link{lgetcor}}, \code{\link{lgetcal}},
 \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 }

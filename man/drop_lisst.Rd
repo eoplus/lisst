@@ -14,5 +14,5 @@ A \code{data.frame}, with all columns of class \code{quantities} in
 exception of those that contain time information.
 }
 \description{
-drop lisst
+Drop lisst class and attributes.
 }

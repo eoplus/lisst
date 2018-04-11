@@ -1,11 +1,82 @@
-#' Subsenting of lisst objects
+
+# Get lisst specific attributes
+# This was mainly created for use in the c.lisst function.
+
+.lattributes <- function(x) {
+	attributes(x)[c('type', 'lproc', 'linst', 'lmodl', 'zscat', 'lxts')]
+}
+
+#' Concatenate lisst objects
 #' 
-#' Performs subsetting of keeping the attributes of the lisst object.
+#' This function allows to concatenate two or more lisst objects into a single
+#' object. Checks are made to ensure the final object is coherent (same 
+#' instrument and inversion type, if applicable) and conversion between types is
+#' made as necessary. See details.
+#' 
+#' @details The first lisst object is taken as reference, i.e., all subsequent 
+#' lisst objects will be converted to its type ('raw', 'cor', 'cal', 'vsf', 
+#' 'vol' or 'pnc') before the concatenation. A check on the lisst attributes is 
+#' made to ensure consistency that all data is from a single instrument/model 
+#' and from the same inversion type (if applicable).
+#'
+#' @return A lisst object with type equal to the first argument and containing 
+#' data from all arguments.
+#'
+#' @examples
+#' l1 <- donkmeer_bin
+#' l2 <- lget(donkmeer_bin, 'raw')
+#' l3 <- c(l1, l2)
+#' 
+#' @export
+
+c.lisst <- function(...) {
+	x   <- list(...)
+	typ <- attr(x[[1]], "type")
+	x   <- lapply(x, lget, type = typ)
+	for(i in 2:length(x)) {
+		if(!identical(.lattributes(x[[1]]), .lattributes(x[[i]])))
+			stop("Concatenation of lisst objects requires them to be from the same ",
+				"instrument/model and the same inversion type (if applicable)", 
+				call. = FALSE)
+	}
+	do.call(rbind, x)
+}
+
+#' Subset lisst objects
+#' 
+#' Performs subsetting by index, depth or time.
+#'
+#' @details Subseting can be done by sample index using a vector of integers, 
+#' by depth using a string of the form 'depth1|depth2', or by time using a time 
+#' object vector (e.g. POSIXct) or a caracter string in the format of ISO 8601.
+#' The time subsetting actully uses the xts subsetting functions, see 
+#' \code{?xts::`[.xts`} for details.
+#'
+#' @examples
 #'
 #' @export
 
 `[.lisst` <- function(x, i, j, ..., drop = TRUE) {
+	if(!missing(i)) {
+		if(is.character(i)) {
+			if(length(i) > 1) {
+			# Will be used when station names are recorded. Now will just throw an error.
+			stop("Character indexing for lisst objects must be length one", call. = FALSE)
+			} else if(length(grep("|", i, fixed = TRUE)) > 0) {
+				range <- as.numeric(unlist(strsplit(i, "|", fixed = TRUE)))
+				depth <- drop_quantities(x$Depth)
+				i <- which(depth >= range[1] & depth < range[2])
+			} else {
+				lxts <- attr(x, "lxts")
+				i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
+			}
+		} else if(xts::timeBased(i)) {
+			lxts <- attr(x, "lxts")
+			i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
+		}
+	}
 	if(((missing(i) && length(j) == 1) || (missing(j) && length(i) == 1)) && drop) {
+		#x <- drop_lisst(x)
 		NextMethod(drop = drop)
 	} else {
 		structure(NextMethod(drop = drop), 

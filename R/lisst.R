@@ -10,6 +10,7 @@
 #' @import units
 #' @import errors
 #' @import quantities
+#' @import xts
 #' @name lisst-package
 NULL
 

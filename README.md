@@ -12,12 +12,12 @@ devtools::install_github("AlexCast/lisst")
 ```
 
 ### Provided functionality:
+- Subseting by sample index, depth or time;
 - Particle VSF retrieval from binary file;
 - Particle number concentraton (1/L/µm) from ppm volume;
 - PSD model fitting; 
 - Diverse plot utilities; (in development...)
 - Automatic data quality control; (in development...)
-- Subseting by sample index, depth or time;
 - Automatic units conversion and uncertainty track with the [quantities](https://github.com/r-quantities/quantities) package;
 
 ### Instrument models suported:
