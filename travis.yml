@@ -1,0 +1,24 @@
+language: R
+sudo: false
+cache: packages
+r:
+  - oldrel
+  - release
+  - devel
+
+git:
+  submodules: false
+
+addons:
+  apt:
+    packages:
+      - libudunits2-dev
+
+r_github_packages:
+  - r-lib/covr
+  - r-quantities/units
+  - r-quantities/errors
+  - r-quantities/quantities
+
+after_success:
+- Rscript -e 'covr::codecov()'
