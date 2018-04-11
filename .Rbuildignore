@@ -7,3 +7,4 @@
 .gitmodules
 .gitignore
 .git
+^vignettes/working_with_lisst_in-R\.Rmd$

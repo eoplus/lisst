@@ -1,14 +1,13 @@
 ---
 title: "Working with LISST data in R"
 author: "Alexandre Castagna"
-output:
-  html_document:
-    toc: true
-    theme: united
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+
 vignette: >
   %\VignetteIndexEntry{Working with LISST data in R}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  %\VignetteEncoding{UTF-8}{inputenc}
 ---
 
 ```{r echo=FALSE}
