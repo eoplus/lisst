@@ -2,3 +2,8 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^vignettes$
+^\.travis\.yml$
+^README\.Rmd$
+.gitmodules
+.gitignore
+.git

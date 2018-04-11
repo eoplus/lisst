@@ -33,6 +33,6 @@ l_cor <- lgetcor(donkmeer_bin)
 
 }
 \seealso{
-\code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetval}}, 
+\code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcal}}, 
 \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 }

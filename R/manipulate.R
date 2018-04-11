@@ -51,10 +51,13 @@ c.lisst <- function(...) {
 #' 
 #' Performs subsetting by index, depth or time.
 #'
-#' @param i An integer vector, a time object (e.g., POSIXct), or a character 
-#' string specifying deph range (in meters) or time range in the ISO 8601 
-#' format.
-#' @param j An integer vector or a character string to macth a column name.
+#' @param x    A lisst object.
+#' @param i    An integer vector, a time object (e.g., POSIXct), or a character 
+#'             string specifying deph range (in meters) or time range in the ISO 
+#'             8601 format.
+#' @param j    An integer vector or a character string to macth a column name.
+#' @param ...  Arguments to be passed to methods.
+#' @param drop Logical. Should the lisst and data.frame properties be dropped?
 #'
 #' @details Subseting can be done by sample index using a vector of integers, 
 #' by depth using a string of the form 'depth1|depth2', or by time using a time 
@@ -63,10 +66,10 @@ c.lisst <- function(...) {
 #' \code{?`[.xts`} for details.
 #'
 #' @examples
-#' donkmeer_bin[1:3, ]         # First three samples
-#' donkmeer_bin['0|5', ]       # First five meters
-#' donkmeer_bin['2018-03', ]   # Samples for march 2018
-#' donkmeer_bin['2017-06/2018-06', ] # Samples between June 2017 to June 2018
+#' lsub <- donkmeer_bin[1:3, ]         # First three samples
+#' lsub <- donkmeer_bin['0|5', ]       # First five meters
+#' lsub <- donkmeer_bin['2018-03', ]   # Samples for march 2018
+#' lsub <- donkmeer_bin['2017-06/2018-06', ] # Samples between June 2017 to June 2018
 #'
 #' @seealso \code{`[.xts`}
 #'
@@ -93,17 +96,14 @@ c.lisst <- function(...) {
 	}
 	if(((missing(i) && length(j) == 1) || (missing(j) && length(i) == 1)) && drop) {
 		#x <- drop_lisst(x)
-		x <- NextMethod(drop = drop)
+		NextMethod(drop = drop)
 	} else {
-		x <- NextMethod(drop = drop)
-		lxts <- lxts[i, ]
-		structure(x, 
+		structure(NextMethod(drop = drop), 
 			"type"  = attr(x, "type"),
 			"lproc" = attr(x, "lproc"),
 			"linst" = attr(x, "linst"),
 			"lmodl" = attr(x, "lmodl"),
 			"zscat" = attr(x, "zscat"),
-#			"lxts"  = lxts,
 			class   = c("lisst", "data.frame"))
 	}
 }
@@ -175,7 +175,7 @@ lget <- function(x, type) {
 #' @examples
 #' l_raw <- lgetraw(donkmeer_bin)
 #'
-#' @seealso \code{\link{lget}} \code{\link{lgetcor}}, \code{\link{lgetval}}, 
+#' @seealso \code{\link{lget}} \code{\link{lgetcor}}, \code{\link{lgetcal}}, 
 #' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 #'
 #' @export
@@ -230,7 +230,7 @@ lgetraw <- function(x) {
 #' taken from the Water Optical Properties Processor (WOPP) and correspond to 
 #' 0.439 and 5.808e-4 1/m, respectivelly.
 #'
-#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetval}}, 
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcal}}, 
 #' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 #'
 #' @examples
@@ -393,9 +393,12 @@ lgetvsf <- function(x) {
 
 	wang  <- as.errors(c(lmodl$wang[1, 2], lmodl$wang[, 1]))
 
-	for(i in 1:lmodl$nring)
+	for(i in 1:lmodl$nring) {
+#		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_quantities(pi, 1, 0) * lmodl$pl * 
+#				(wang[i]^2 - wang[i+1]^2) / set_quantities(6, 1, 0)), 1/m/sr) # bug in errors?
 		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_quantities(pi, 1, 0) * lmodl$pl * 
-				(wang[i]^2 - wang[i+1]^2) / set_quantities(6, 1, 0)), 1/m/sr)
+				((wang[i] * wang[i]) - (wang[i+1]*wang[i+1])) / set_quantities(6, 1, 0)), 1/m/sr) # bug in errors?
+	}
 	attr(x, "type") <- "vsf"
 	x
 }

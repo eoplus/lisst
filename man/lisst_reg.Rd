@@ -27,7 +27,6 @@ provided in the path argument, and it should contain files for a single
 instrument.
 }
 \examples{
-:
 path  <- system.file("extdata", package = "lisst")
 model <- 100
 lisst_reg(model, path)

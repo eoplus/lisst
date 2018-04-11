@@ -8,7 +8,7 @@
 #'
 #' @export
 
-lfit <- function(x, type) {
+lfit <- function(x, model) {
 	stopifnot(is.lisst(x))
 	typ <- attr(x, 'type')
 	if(!(typ == 'vol' || typ == 'pnc'))
@@ -54,9 +54,6 @@ lfit <- function(x, type) {
 #' asymptotic variance formula of the median. See \code{?mean.errors} for 
 #' details.
 #'
-#' @examples
-#' 
-#'
 #' @export
 
 lstat <- function(x, brks, fun = 'mean', ...) {
@@ -74,18 +71,24 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 }
 
 #' @describeIn lstat Compute the mean for lisst objects
+#'
+#' @export
+
 mean.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
 	xm <- x[1, , drop = FALSE]
-	xm[1, ] <- as.data.frame(sapply(x, mean, ..., simplify = F))
+	xm[1, ] <- as.data.frame(sapply(x, mean, simplify = F))
 	xm
 }
 
 #' @describeIn lstat Compute the median for lisst objects
+#'
+#' @export
+
 median.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
 	xm <- x[1, , drop = FALSE]
-	xm[1, ] <- as.data.frame(sapply(x, median, ..., simplify = F))
+	xm[1, ] <- as.data.frame(sapply(x, median, simplify = F))
 	xm
 }
 

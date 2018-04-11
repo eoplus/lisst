@@ -4,7 +4,7 @@
 \alias{lfit}
 \title{Fit a PSD model to the lisst data}
 \usage{
-lfit(x, type)
+lfit(x, model)
 }
 \arguments{
 \item{x}{A PSD ('vol' or 'pnc') lisst object.}

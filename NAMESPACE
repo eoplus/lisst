@@ -2,6 +2,8 @@
 
 S3method("[",lisst)
 S3method(c,lisst)
+S3method(mean,lisst)
+S3method(median,lisst)
 export(drop_lisst)
 export(is.lisst)
 export(lfit)

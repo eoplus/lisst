@@ -19,6 +19,6 @@ l_raw <- lgetraw(donkmeer_bin)
 
 }
 \seealso{
-\code{\link{lget}} \code{\link{lgetcor}}, \code{\link{lgetval}}, 
+\code{\link{lget}} \code{\link{lgetcor}}, \code{\link{lgetcal}}, 
 \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
 }

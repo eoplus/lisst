@@ -29,7 +29,7 @@ NULL
 #' @export
 
 is.lisst <- function(x) {
-	inherits(x, "lisst") && any(!sapply(.lattributes(x), is.null) && !is.null(x$Time))
+	inherits(x, "lisst") && any(!sapply(.lattributes(x), is.null)) && !is.null(x$Time)
 }
 
 #' drop lisst

@@ -7,11 +7,17 @@
 \method{[}{lisst}(x, i, j, ..., drop = TRUE)
 }
 \arguments{
+\item{x}{A lisst object.}
+
 \item{i}{An integer vector, a time object (e.g., POSIXct), or a character 
-string specifying deph range (in meters) or time range in the ISO 8601 
-format.}
+string specifying deph range (in meters) or time range in the ISO 
+8601 format.}
 
 \item{j}{An integer vector or a character string to macth a column name.}
+
+\item{...}{Arguments to be passed to methods.}
+
+\item{drop}{Logical. Should the lisst and data.frame properties be dropped?}
 }
 \description{
 Performs subsetting by index, depth or time.
@@ -24,10 +30,10 @@ The time subsetting actully uses the xts subsetting functions, see
 \code{?`[.xts`} for details.
 }
 \examples{
-donkmeer_bin[1:3, ]         # First three samples
-donkmeer_bin['0|5', ]       # First five meters
-donkmeer_bin['2018-03', ]   # Samples for march 2018
-donkmeer_bin['2017-06/2018-06', ] # Samples between June 2017 to June 2018
+lsub <- donkmeer_bin[1:3, ]         # First three samples
+lsub <- donkmeer_bin['0|5', ]       # First five meters
+lsub <- donkmeer_bin['2018-03', ]   # Samples for march 2018
+lsub <- donkmeer_bin['2017-06/2018-06', ] # Samples between June 2017 to June 2018
 
 }
 \seealso{

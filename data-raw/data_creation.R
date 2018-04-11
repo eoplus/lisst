@@ -1,4 +1,5 @@
 
+devtools::load_all()
 
 model = "100"
 path = "inst/extdata"

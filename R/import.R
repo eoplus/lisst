@@ -93,7 +93,7 @@
 #' https://www.sequoiasci.com/product/lisst-200x/
 #'
 #' @seealso \code{\link{lget}}, \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-#' \code{\link{lgetval}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}} and 
+#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}} and 
 #' \code{\link{lgetpnc}}.
 #'
 #' @examples
@@ -102,11 +102,11 @@
 #'
 #' # For a unregistered LISST instrument:
 #' model <- "100CX" 
-#' read_lisst(flp, model = model)
-#' read_lisst(fl, out = 'raw', model = model)
+#' lop <- read_lisst(flp, model = model)
+#' lob <- read_lisst(flb, out = 'raw', model = model)
 #' 
 #' # If other levels of processing, including VSF, are required, first
-#' register a LISST instrument:
+#' # register a LISST instrument:
 #' path  <- system.file("extdata", package = "lisst")
 #' model <- 100
 #' lisst_reg(model, path)
@@ -118,19 +118,19 @@
 #' zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
 #'
 #' # For a processed file:
-#' read_lisst(flp, sn, pl, zscat, yr, out)
-#' read_lisst(flp, sn, pl, zscat, yr)
-#' read_lisst(flp, sn, pl, zscat)
-#' read_lisst(flp, sn, pl)
-#' read_lisst(flp, sn) # minimum information
+#' lop <- read_lisst(flp, sn, pl, zscat, yr, out)
+#' lop <- read_lisst(flp, sn, pl, zscat, yr)
+#' lop <- read_lisst(flp, sn, pl, zscat)
+#' lop <- read_lisst(flp, sn, pl)
+#' lop <- read_lisst(flp, sn) # minimum information
 #'
 #' # For a binary file:
-#' read_lisst(flb, sn, pl, zscat, yr, out = 'raw')
-#' read_lisst(flb, sn, pl, zscat, yr, out = 'cor')
-#' read_lisst(flb, sn, pl, zscat, yr, out = 'cal')
-#' read_lisst(flb, sn, pl, zscat, yr)
-#' read_lisst(flb, sn, pl, zscat)
-#' read_lisst(flb, sn, zscat = zscat) # minimum information for full capability
+#' lob <- read_lisst(flb, sn, pl, zscat, yr, out = 'raw')
+#' lob <- read_lisst(flb, sn, pl, zscat, yr, out = 'cor')
+#' lob <- read_lisst(flb, sn, pl, zscat, yr, out = 'cal')
+#' lob <- read_lisst(flb, sn, pl, zscat, yr)
+#' lob <- read_lisst(flb, sn, pl, zscat)
+#' lob <- read_lisst(flb, sn, zscat = zscat) # minimum information for full capability
 #'
 #' @export
 
