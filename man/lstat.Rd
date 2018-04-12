@@ -37,8 +37,6 @@ center. For the mean the dispersion is the standard deviation and for the
 median it is 1.252 * the standard deviation of the mean, as derived from the 
 asymptotic variance formula of the median. See \code{?mean.errors} for 
 details.
-
-median.lisst(donkmeer_bin)
 }
 \section{Methods (by generic)}{
 \itemize{
@@ -47,7 +45,3 @@ median.lisst(donkmeer_bin)
 \item \code{median}: Compute the median for lisst objects
 }}
 
-\examples{
-mean.lisst(donkmeer_bin)
-
-}
