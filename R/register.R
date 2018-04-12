@@ -89,6 +89,7 @@ lisst_reg <- function(model, path) {
 		)
 
 		save(".LISSTi", file = file.path(find.package("lisst"), "R", "sysdata.rda"))
+		unlockBinding(".LISSTi", environment(lisst::lisst_reg))
 		assign(".LISSTi", .LISSTi, envir = environment(lisst::lisst_reg))
 		if(.LISSTi[[as.character(dat[1])]]$X) model <- paste0(model, "X")
 		cat("\n")
