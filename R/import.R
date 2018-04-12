@@ -252,7 +252,9 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	}
 	lo <- as.data.frame(lo)
 	colnames(lo) <- lmodl$lvarn
-	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * drop_quantities(lmodl$pl / pl)
+	mfact <- drop_quantities(lmodl$pl / pl)
+	for(i in 1:lmodl$nring) lo[, i] <- lo[, i] * mfact
+	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * mfact
 	lmodl$pl <- pl
 
 	zscatd <- rep(as.numeric(NA), lmodl$bnvar)

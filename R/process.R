@@ -72,6 +72,9 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 
 #' @describeIn lstat Compute the mean for lisst objects
 #'
+#' @examples
+#' mean(donkmeer_bin)
+#'
 #' @export
 
 mean.lisst <- function(x, ...) {
@@ -82,6 +85,9 @@ mean.lisst <- function(x, ...) {
 }
 
 #' @describeIn lstat Compute the median for lisst objects
+#'
+#' @examples
+#' median(donkmeer_bin)
 #'
 #' @export
 

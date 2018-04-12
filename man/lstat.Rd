@@ -45,3 +45,9 @@ details.
 \item \code{median}: Compute the median for lisst objects
 }}
 
+\examples{
+mean(donkmeer_bin)
+
+median(donkmeer_bin)
+
+}
