@@ -7,6 +7,7 @@
 #' @author Alexandre Castagna
 #'
 #' @docType package
+#' @import stats
 #' @import units
 #' @import errors
 #' @import quantities

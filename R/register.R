@@ -88,7 +88,7 @@ lisst_reg <- function(model, path) {
 			tempcc = quantities::set_quantities(hk[grep("Temperature", hkn), ], `°C`, 0)
 		)
 
-		save(".LISSTi", file = system.file("R", "sysdata.rda", package = "lisst"))
+		save(".LISSTi", file = file.path(find.package("lisst"), "R", "sysdata.rda"))
 		assign(".LISSTi", .LISSTi, envir = environment(lisst::lisst_reg))
 		if(.LISSTi[[as.character(dat[1])]]$X) model <- paste0(model, "X")
 		cat("\n")
