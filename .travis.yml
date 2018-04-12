@@ -9,6 +9,8 @@ r:
 git:
   submodules: false
 
+warnings_are_errors: false
+
 addons:
   apt:
     packages:
