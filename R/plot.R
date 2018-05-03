@@ -78,9 +78,9 @@
 #' flp <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
 #' model <- "100CX" 
 #' lop <- read_lisst(flp, model = model)
-#' lhov(x, by = 'sample')
-#' lhov(x, by = 'sample', norm = FALSE)
-#' lhov(x, by = 'sample', norm = FALSE, legend = FALSE)
+#' lhov(lop, by = 'sample')
+#' lhov(lop, by = 'sample', norm = FALSE)
+#' lhov(lop, by = 'sample', norm = FALSE, legend = FALSE)
 #'
 #' @export
 
