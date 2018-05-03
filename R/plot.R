@@ -84,12 +84,6 @@
 #'
 #' @export
 
-by = 'sample'
-nbins = "pretty"
-norm = TRUE
-legend = TRUE
-
-
 lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE, col, xlab, ylab, 
 	zlab, yu, zu) {
 
