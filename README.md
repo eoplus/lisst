@@ -1,6 +1,6 @@
 # lisst (in development...)
 
-[![Build Status](https://travis-ci.org/AlexCast/lisst.svg?branch=master)](https://travis-ci.org/AlexCast/lisst) [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/lisst)](https://cran.r-project.org/package=lisst)
+[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](http://www.repostatus.org/badges/latest/wip.svg)](http://www.repostatus.org/#wip) [![Build Status](https://travis-ci.org/AlexCast/lisst.svg?branch=master)](https://travis-ci.org/AlexCast/lisst) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/AlexCast/lisst?branch=master&svg=true)](https://ci.appveyor.com/project/AlexCast/lisst) [![Coverage Status](https://img.shields.io/codecov/c/github/AlexCast/lisst/master.svg)](https://codecov.io/github/AlexCast/lisst?branch=master) [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/lisst)](https://cran.r-project.org/package=lisst)
 
 An R package to read, manipulate and visualize data from the Laser In-Situ Scattering and Transmissometry (LISST) instruments, Sequoia Scientific, Inc.
 

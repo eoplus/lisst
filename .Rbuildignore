@@ -1,8 +1,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^data-raw$
-^\.travis\.yml$
 ^README\.Rmd$
 .gitmodules
 .gitignore
 .git
+^codecov\.yml$
+^\.travis\.yml$
+^\.appveyor\.yml$

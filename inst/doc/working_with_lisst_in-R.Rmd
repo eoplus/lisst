@@ -1,18 +1,18 @@
 ---
 title: "Working with LISST data in R"
 author: "Alexandre Castagna"
-output:
-  html_document:
-    toc: true
-    theme: united
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+
 vignette: >
   %\VignetteIndexEntry{Working with LISST data in R}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  %\VignetteEncoding{UTF-8}{inputenc}
 ---
 
 ```{r echo=FALSE}
 knitr::opts_chunk$set(collapse = TRUE)
+units_options(negative_power = TRUE, parse = TRUE, group = c("(", ")"))
 ```
 
 ## Introduction
@@ -34,6 +34,8 @@ quick overview from first time registering an instrument to the final plot of th
 desired quantity.
 
 ```{r}
+library(lisst)
+
 # Register the LISST instrument:
 path  <- system.file("extdata", package = "lisst")
 model <- 100
@@ -94,9 +96,9 @@ deals only with the object. Here is an example on how to register a LISST, for t
 LISST-100X SN1298:
 
 ```{r}
-#path  <- system.file("extdata", package = "lisst")
-#model <- 100
-#lisst_reg(model, path)
+path  <- system.file("extdata", package = "lisst")
+model <- 100
+lisst_reg(model, path)
 ```
 
 The registration need only to be done once, and is saved to the package data, 
@@ -107,18 +109,18 @@ LISST is registered, reading an data file is simple and can be performed in
 diferent ways:
 
 ```{r}
-#sn    <- 1298
-#pl    <- 0.05
-#yr    <- 2018 
-#zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+sn    <- 1298
+pl    <- 0.05
+yr    <- 2018 
+zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
 
 # For a processed file:
-#flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
-#lop   <- read_lisst(flp, sn, pl, zscat, yr)
+flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+lop   <- read_lisst(flp, sn, pl, zscat, yr)
 
 # For a binary file:
-#flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
-#lob   <- read_lisst(flb, sn, pl, zscat, yr)
+flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
+lob   <- read_lisst(flb, sn, pl, zscat, yr)
 ```
 
 As the example shows, the function will determine the file type automaticly, 
@@ -135,7 +137,7 @@ a file for an instrument that is not registered - this is limited to the same
 cases when zscat can be omitted, and instead of providing sn, a model is sufficient.
 
 ```{r}
-#lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
+lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
 ```
 As a final note, when reading a processed file or when reading a binary file as 
 calibrated units (out = 'cal', the default for binary files) the lisst object will
@@ -153,8 +155,8 @@ attenuation are corrected to add effect of pure water. A correction is also
 applied in the rings digital counts for the binary data.
 
 ```{r}
-#lop[15, , drop = FALSE]
-#lob[15, , drop = FALSE]
+lop[15, , drop = FALSE]
+lob[15, , drop = FALSE]
 ```
 
 ## Processing
@@ -168,12 +170,12 @@ Function form the calibrated values.
 
 ```{r}
 # Converting from vol conc to n conc:
-#lop[15, 1:3, drop = FALSE]
-#lgetpnc(lop)[15, 1:3, drop = FALSE]
+lop[15, 1:3, drop = FALSE]
+lget(lop, 'pnc')[15, 1:3, drop = FALSE]
 
 # Converting from cal to VSF:
-#lob[15, 1:3, drop = FALSE]
-#lgetvsf(lob)[15, 1:3, drop = FALSE]
+lob[15, 1:3, drop = FALSE]
+lget(lob, 'vsf')[15, 1:3, drop = FALSE]
 ```
 
 Is also possible to extract PSD model parameters. At the curent version, only the
@@ -181,7 +183,7 @@ Junge model is available:
 
 ```{r}
 # Extract the Junge slope for a PSD:
-#lgetfit(lop)[15:17]
+lfit(lop)[15:17]
 ```
 
 ## Visualizing
@@ -202,3 +204,19 @@ concentration and the volume concentration.
 #plot(lov[40:144, ], type = 'pf', xu = 'degree')
 #plot(lop[40:144, ], type = 'vol')
 ```
+
+The most useful plot function however is the lhov, that produces a Hovmöller 
+diagram per sample, time or depth, with automatic binning to regular intervals
+if ordinate dimension is irregular (most likelly to happen to depth ordinate, 
+since time will be fixed intervals except when two lisst objects with different 
+sampling intervals are combined). It is possible to normalize the data by the 
+sum of teh values for all detectors and so separate variations in concentration 
+from variations in distribution shape.
+
+```{r, fig.height = 7, fig.width = 7}
+lov <- lget(lob, 'vsf')
+lhov(lob, by = 'sample')
+lhov(lob, by = 'sample', norm = FALSE)
+```
+
+

@@ -22,7 +22,7 @@ lfit <- function(x, model) {
 
 	bins  <- as.numeric(lmodl$binr[[lproc$ity]][, 3])
 	junge <- numeric(nrow(x))
-	mat   <- as.matrix(drop_errors(x[, 1:lmodl$nring]))
+	mat   <- as.matrix(x[, 1:lmodl$nring])
 	id    <- which(mat[, 1] != 0)
 	for(i in id) {
 		jfit <- lm(log10(mat[i, ])~log10(bins))

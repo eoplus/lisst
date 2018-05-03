@@ -1,7 +1,10 @@
 ## ----echo=FALSE----------------------------------------------------------
 knitr::opts_chunk$set(collapse = TRUE)
+units_options(negative_power = TRUE, parse = TRUE, group = c("(", ")"))
 
 ## ------------------------------------------------------------------------
+library(lisst)
+
 # Register the LISST instrument:
 path  <- system.file("extdata", package = "lisst")
 model <- 100
@@ -47,43 +50,43 @@ lop_d <- c(lop, lop_pnc)
 # plot(lop[40:144, ], type = 'vol')
 
 ## ------------------------------------------------------------------------
-#path  <- system.file("extdata", package = "lisst")
-#model <- 100
-#lisst_reg(model, path)
+path  <- system.file("extdata", package = "lisst")
+model <- 100
+lisst_reg(model, path)
 
 ## ------------------------------------------------------------------------
-#sn    <- 1298
-#pl    <- 0.05
-#yr    <- 2018 
-#zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+sn    <- 1298
+pl    <- 0.05
+yr    <- 2018 
+zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
 
 # For a processed file:
-#flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
-#lop   <- read_lisst(flp, sn, pl, zscat, yr)
+flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+lop   <- read_lisst(flp, sn, pl, zscat, yr)
 
 # For a binary file:
-#flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
-#lob   <- read_lisst(flb, sn, pl, zscat, yr)
+flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
+lob   <- read_lisst(flb, sn, pl, zscat, yr)
 
 ## ------------------------------------------------------------------------
-#lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
+lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
 
 ## ------------------------------------------------------------------------
-#lop[15, , drop = FALSE]
-#lob[15, , drop = FALSE]
+lop[15, , drop = FALSE]
+lob[15, , drop = FALSE]
 
 ## ------------------------------------------------------------------------
 # Converting from vol conc to n conc:
-#lop[15, 1:3, drop = FALSE]
-#lgetpnc(lop)[15, 1:3, drop = FALSE]
+lop[15, 1:3, drop = FALSE]
+lget(lop, 'pnc')[15, 1:3, drop = FALSE]
 
 # Converting from cal to VSF:
-#lob[15, 1:3, drop = FALSE]
-#lgetvsf(lob)[15, 1:3, drop = FALSE]
+lob[15, 1:3, drop = FALSE]
+lget(lob, 'vsf')[15, 1:3, drop = FALSE]
 
 ## ------------------------------------------------------------------------
 # Extract the Junge slope for a PSD:
-#lgetfit(lop)[15:17]
+lfit(lop)[15:17]
 
 ## ------------------------------------------------------------------------
 #lov <- lgetvsf(lob)
@@ -92,4 +95,9 @@ lop_d <- c(lop, lop_pnc)
 #plot(lop[40:144, ], type = 'pnc')
 #plot(lov[40:144, ], type = 'pf', xu = 'degree')
 #plot(lop[40:144, ], type = 'vol')
+
+## ---- fig.height = 7, fig.width = 7--------------------------------------
+lov <- lget(lob, 'vsf')
+lhov(lob, by = 'sample')
+lhov(lob, by = 'sample', norm = FALSE)
 
