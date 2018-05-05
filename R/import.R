@@ -232,8 +232,9 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 		if(out == 'pnc') lo <- lgetpnc(lo)
 	}
 
+	if(mode == 'binary' & is.null(zcat)) trant <- FALSE
 	if(trant) {
-		if(out == 'raw')
+		if(out == 'raw' | out == 'cor')
 			ot <- lget(lo, 'cal')[, "Optical transmission"]
 		else
 			ot <- lo[, "Optical transmission"]
