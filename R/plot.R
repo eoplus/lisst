@@ -56,6 +56,11 @@
 #' @param zu     The units for the magnitude values. See details.
 #'
 #' @details
+#' The z scale is provided in log10 for appropriate color mapping. However, 
+#' LISST 100 SOP will return x volume concentration if concentration is below 
+#' 0.001 ppm. In that case, zeros as treated as half this minimul value, 0.0005 
+#' ppm.
+#'
 #' If the lisst object is not regularly spaced in the chosen dimension, it will 
 #' be binned for raster representation. The nbins parameter will control the 
 #' number of bins, with all bins having the same interval size. The sample 
@@ -90,11 +95,11 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 	lmodl  <- attr(x, "lmodl")
 	lty    <- attr(x, "type")
 	xm     <- do.call(rbind, x[, 1:lmodl$nring])
+	units(xm) <- units(x[, 1])
 	if(lty == 'vol' | lty == 'pnc') {
-		.na <- set_errors(as.numeric(NA), 0)
-		units(.na) <- units(xm)
-		xm[drop_quantities(xm) == 0] <- .na
+		xm[drop_units(xm) == 0] <- 0.0005
 	}
+
 	if(legend && norm) {
 		layout(matrix(c(1, 2, 3), ncol = 1), heights = c(1, 4, 1))
 	} else if(legend) {
@@ -123,11 +128,11 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 
 	if(norm) {
 		xs <- xm[1, ]
-		for(i in 1:ncol(xm)) xs[i] <- sum(xm[, i])
+		for(i in 1:ncol(xm)) xs[i] <- sum(xm[, i], na.rm = T)
 		xm   <- xm / rep(xs, each = nrow(xm))
 		par(mar = c(0, 5, 0, 1))
 		nylab <- units::make_unit_label('Total', x[, 1])
-		plot(xaxn[[2]], drop_quantities(xs), axes = F, xlab = "", type = "l", xaxs = 'i', 
+		plot(xaxn[[2]], drop_units(xs), axes = F, xlab = "", type = "l", xaxs = 'i', 
 			ylab = nylab, log = 'y')
 		axis(2)
 	}
@@ -138,7 +143,7 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 	id <- c(seq(1, lmodl$nring, by = 4), lmodl$nring)
 	axis(2, at = id+0.5, labels = round(yaxn[[2]][id], 4))
 	axis(1, at = axTicks(1) + 0.5, labels = xaxn[[2]][axTicks(1)])
-	xm   <- log10(drop_quantities(xm))
+	xm   <- log10(drop_units(xm))
 	xrst <- matrix(.map2color(xm, col), ncol = ncol(xm))[nrow(xm):1, ]
 	rasterImage(xrst, xleft = 1, ybottom = 1, xright = ncol(xm) + 1, ytop = lmodl$nring + 1, 
 		interpolate = F)

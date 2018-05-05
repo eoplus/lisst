@@ -21,9 +21,6 @@ environment:
   USE_RTOOLS: true
 
 build_script:
-  - travis-tool.sh install_github r-quantities/units
-  - travis-tool.sh install_github r-quantities/errors
-  - travis-tool.sh install_github r-quantities/quantities
   - travis-tool.sh install_deps
 
 test_script:

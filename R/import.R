@@ -26,6 +26,9 @@
 #'              LISST-200X). For the LISST-100(X), the detector type must be 
 #'              included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
 #'              provided.
+#' @param trant Logical. Should a optical transmittance threshold be applied? If
+#'              TRUE, ring values for a given sample with transmittance < 0.3 
+#'              are set to NA.
 #'
 #' @details
 #' The function will determine the file type based on its extenssion. Processed 
@@ -134,7 +137,7 @@
 #'
 #' @export
 
-read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
+read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 	if(!file.exists(fl))
 		stop(paste("File", fl, "not found"), call. = FALSE)
 
@@ -144,7 +147,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	if(missing(out) && mode == "processed") out <- "vol"
 	if(missing(out) && mode == "binary")    out <- "vsf"
 	if(mode == "processed" && !(out == "vol" || out == "pnc"))
-		stop("out for LISST-SOP processed files must be 'vol' or 'pnc'", call. = FALSE)
+		stop("out for LISST SOP processed files must be 'vol' or 'pnc'", call. = FALSE)
 	if(mode == "binary" && (out == "vol" || out == "pnc"))
 		stop("out for binary LISST files must be 'raw', 'cor', 'cal' or vsf", call. = FALSE)
 
@@ -160,7 +163,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 		linst <- list(X = FALSE)
 		if(length(grep("X", model)) > 0) linst$X <- TRUE
 		model <- sub("X", "", model)
-		lmodl <- switch(model, 
+		lmodl <- switch(model,
 			"200"  = .getmodp(list(mod = "200", dty = "A")),
 			"100B" = .getmodp(list(mod = "100", dty = "B")),
 			"100C" = .getmodp(list(mod = "100", dty = "C"))
@@ -193,16 +196,16 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 
 	# It is not setting directly the pl component of lmodl because .lisst_pro
 	# will need to compensate the beam attenuation with a factor based on the 
-	# standard pl of the model. 
+	# standard pl of the model.
 	if(missing(pl)) {
 		warning(paste("pl not provided - assuming standard path length"), 
 			call. = FALSE)
 		pl <- lmodl$pl
-	} else if(pl > drop_quantities(lmodl$pl)) {
+	} else if(pl > drop_units(lmodl$pl)) {
 		stop(paste0("Path length in LISST-", linst$mod, " cannot be larger than ", 
-			drop_quantities(lmodl$pl), " m"), call. = FALSE)
+			drop_units(lmodl$pl), " m"), call. = FALSE)
 	}
-	pl <- set_quantities(pl, m, 0)
+	pl <- set_units(pl, m)
 
 	guess <- FALSE
 	if(missing(yr)) {
@@ -229,6 +232,15 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 		if(out == 'pnc') lo <- lgetpnc(lo)
 	}
 
+	if(trant) {
+		if(out == 'raw')
+			ot <- lget(lo, 'cal')[, "Optical transmission"]
+		else
+			ot <- lo[, "Optical transmission"]
+		id  <- which(drop_units(ot) < 0.3)
+		for(i in id) lo[i, 1:attr(lo, 'lmodl')$nring] <- NA
+	}
+
 	return(lo)
 }
 
@@ -252,7 +264,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	}
 	lo <- as.data.frame(lo)
 	colnames(lo) <- lmodl$lvarn
-	mfact <- drop_quantities(lmodl$pl / pl)
+	mfact <- drop_units(lmodl$pl / pl)
 	for(i in 1:lmodl$nring) lo[, i] <- lo[, i] * mfact
 	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * mfact
 	lmodl$pl <- pl
@@ -267,8 +279,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 	id <- setdiff(lmodl$lvarn, c("Time1","Time2","Year","Month","Day","Hour","Minute","Second"))
 	id <- which(lmodl$lvarn %in% id)
 	for(i in id) {
-		quantities(lo[, i]) <- list(lmodl$varun[i], 0)
-		if(i < lmodl$bnvar) quantities(zscatd[, i]) <- list(1, 0)
+		units(lo[, i]) <- lmodl$varun[i]
+		if(i < lmodl$bnvar) units(zscatd[, i]) <- 1
 	}
 
 	lo <- structure(lo, type = 'vol', lproc = list(ity = ity), linst = linst, 
@@ -307,8 +319,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model) {
 			"Hour","Minute","Second"))
 		id <- which(lmodl$lvarn %in% id)
 		for(i in id) {
-			quantities(lo[, i]) <- list(1, 0)
-			quantities(zscatd[, i]) <- list(1, 0)
+			units(lo[, i]) <- 1
+			units(zscatd[, i]) <- 1
 		}
 
 		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), linst = linst, 

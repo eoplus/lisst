@@ -6,9 +6,8 @@ An R package to read, manipulate and visualize data from the Laser In-Situ Scatt
 
 ### Install from Github:
 ```
-# install.packages(devtools)
-devtools::install_github(paste("r-quantities", c("units", "errors", "quantities"), sep="/"))
-devtools::install_github("AlexCast/lisst")
+# install.packages(remotes)
+remotes::install_github("AlexCast/lisst")
 ```
 
 ### Provided functionality:
@@ -18,7 +17,7 @@ devtools::install_github("AlexCast/lisst")
 - PSD model fitting; 
 - Diverse plot utilities; (in development...)
 - Automatic data quality control; (in development...)
-- Automatic units conversion and uncertainty track with the [quantities](https://github.com/r-quantities/quantities) package;
+- Automatic units conversion with the [units](https://github.com/r-quantities/units) package;
 
 ### Instrument models suported:
 - LISST-100(X)

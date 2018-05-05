@@ -85,7 +85,7 @@ c.lisst <- function(...) {
 			stop("Character indexing for lisst objects must be length one", call. = FALSE)
 			} else if(length(grep("|", i, fixed = TRUE)) > 0) {
 				range <- as.numeric(unlist(strsplit(i, "|", fixed = TRUE)))
-				depth <- drop_quantities(x$Depth)
+				depth <- drop_units(x$Depth)
 				i <- which(depth >= range[1] & depth < range[2])
 			} else {
 				i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
@@ -194,7 +194,7 @@ lgetraw <- function(x) {
 	linst <- attr(x, "linst")
 	lmodl <- attr(x, "lmodl")
 
-	wext <- quantities::set_quantities(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1, 0)
+	wext <- set_units(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1)
 	tau  <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
 		zscat[, "Laser transmission"] / x[, "Laser reference"]
 
@@ -260,7 +260,7 @@ lgetcor <- function(x) {
 	linst <- attr(x, "linst")
 	lmodl <- attr(x, "lmodl")
 	if(typ == 'raw') {
-		wext <- set_quantities(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1, 0)
+		wext <- set_units(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1)
 		tau  <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
 			zscat[, "Laser transmission"] / x[, "Laser reference"]
 
@@ -269,7 +269,7 @@ lgetcor <- function(x) {
 				zscat[, "Laser reference"])
 			x[, i] <- x[, i] / wext
 			x[, i] <- x[, i] * linst$ringcf[i]
-			x[, i][drop_quantities(x[, i]) < 0] <- .zero
+			x[, i][drop_units(x[, i]) < 0] <- 0
 		}
 	} else {
 		x[, "Laser transmission"] <- (x[, "Laser transmission"] - linst$lpowcc[2]) / linst$lpowcc[1]
@@ -337,10 +337,10 @@ lgetcal <- function(x) {
 		x[, "Beam attenuation"]     <- set_units(drop_units(-log(tau) / lmodl$pl), 1/m)
 		for(i in 1:lmodl$nring) x[, i] <- set_units(x[, i] * linst$ringcc, µW)
 	} else {
-		wang  <- as.errors(c(lmodl$wang[1, 2], lmodl$wang[, 1]))
+		wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
 		for(i in 1:lmodl$nring) 
-			x[, i] <- set_units(x[, i] * x[, "Laser reference"] * (set_quantities(pi, 1, 0) * lmodl$pl * 
-				set_units(wang[i]^2 - wang[i+1]^2, sr) / set_quantities(6, 1, 0)), µW)
+			x[, i] <- set_units(x[, i] * x[, "Laser reference"] * (set_units(pi, 1) * lmodl$pl * 
+				set_units(wang[i]^2 - wang[i+1]^2, sr) / set_units(6, 1)), µW)
 	}
 
 	attr(x, "type")  <- "cal"
@@ -391,13 +391,13 @@ lgetvsf <- function(x) {
 	lmodl <- attr(x, "lmodl")
 	zscat <- attr(x, "zscat")
 
-	wang  <- as.errors(c(lmodl$wang[1, 2], lmodl$wang[, 1]))
+	wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
 
 	for(i in 1:lmodl$nring) {
-#		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_quantities(pi, 1, 0) * lmodl$pl * 
-#				(wang[i]^2 - wang[i+1]^2) / set_quantities(6, 1, 0)), 1/m/sr) # bug in errors?
-		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_quantities(pi, 1, 0) * lmodl$pl * 
-				((wang[i] * wang[i]) - (wang[i+1]*wang[i+1])) / set_quantities(6, 1, 0)), 1/m/sr) # bug in errors?
+#		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_units(pi, 1) * lmodl$pl * 
+#				(wang[i]^2 - wang[i+1]^2) / set_units(6, 1)), 1/m/sr) # bug in errors?
+		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_units(pi, 1) * lmodl$pl * 
+				((wang[i] * wang[i]) - (wang[i+1]*wang[i+1])) / set_units(6, 1)), 1/m/sr) # bug in errors?
 	}
 	attr(x, "type") <- "vsf"
 	x
@@ -445,8 +445,8 @@ lgetpnc <- function(x) {
 	lproc <- attr(x, "lproc")
 
         bins  <- lmodl$binr[[lproc$ity]]
-	nconc <- set_quantities(4 * pi * (bins[, 3] / 2)^3 / 3, L, 0)
-        binl  <- set_errors(bins[, 2] - bins[, 1], 0)
+	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
+        binl  <- bins[, 2] - bins[, 1]
 	fact  <- nconc^-1 * binl^-1
 	for(i in 1:lmodl$nring) {
 		x[, i] <- set_units(x[, i] * fact[i] , 1/L/µm)
@@ -486,8 +486,8 @@ lgetvol <- function(x) {
 	lproc <- attr(x, "lproc")
 
         bins  <- lmodl$binr[[lproc$ity]]
-	nconc <- set_quantities(4 * pi * (bins[, 3] / 2)^3 / 3, L, 0)
-        binl  <- set_errors(bins[, 2] - bins[, 1], 0)
+	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
+        binl  <- bins[, 2] - bins[, 1]
 	fact  <- nconc^-1 * binl^-1
 	for(i in 1:lmodl$nring) {
 #		x[, i] <- set_units(x[, i] / fact[i], ppm) # Error; seems a bug in the development version of units...

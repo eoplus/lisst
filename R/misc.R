@@ -1,7 +1,4 @@
 
-# A quantities object of value zero, for substitution of negative values:
-.zero <- quantities::set_quantities(0, 1, 0)
-
 # Pure water optical properties at 670 nm:
 # 
 # References:
