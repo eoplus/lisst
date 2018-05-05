@@ -4,7 +4,7 @@
 \alias{read_lisst}
 \title{Read LISST data}
 \usage{
-read_lisst(fl, sn, pl, zscat, yr, out, model)
+read_lisst(fl, sn, pl, zscat, yr, out, model, trant = TRUE)
 }
 \arguments{
 \item{fl}{Path to processed or binary file (e.g., *.DAT for the 
@@ -36,6 +36,10 @@ guess (with a warning). See details.}
 LISST-200X). For the LISST-100(X), the detector type must be 
 included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
 provided.}
+
+\item{trant}{Logical. Should a optical transmittance threshold be applied? If
+TRUE, ring values for a given sample with transmittance < 0.3 
+are set to NA.}
 }
 \value{
 The function returns an object of class lisst, an S3 Class inheriting from 
