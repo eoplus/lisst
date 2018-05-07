@@ -40,19 +40,13 @@ lfit <- function(x, model) {
 #' @param x    A lisst object.
 #' @param brks A vector with the breaks (intervals) for the aggregation. See 
 #'             details.
-#' @param fun  A function to perform the aggregation (mean or median). Defaults 
-#'             to mean.
+#' @param fun  A function to perform the aggregation (mean, median, sd). 
+#'             Defaults to mean.
 #' @param ...  Arguments to be passed to aggregation functions.
 #'
 #' @details 
 #' The breaks (intervals) are passed directly to the subset function, so must 
 #' now be supplied in final form.
-#'
-#' The measure of dispersion in the aggregated data depends on the measure of 
-#' center. For the mean the dispersion is the standard deviation and for the 
-#' median it is 1.252 * the standard deviation of the mean, as derived from the 
-#' asymptotic variance formula of the median. See \code{?mean.errors} for 
-#' details.
 #'
 #' @export
 
@@ -60,8 +54,8 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 	stopifnot(is.lisst(x))
 	if(missing(brks)) stop("brks missing, with no default", call. = FALSE)
 	if(missing(fun)) fun <- 'mean'
-	else if(!(fun == 'mean' || fun == 'weighted.mean' || fun == 'median'))
-		stop("fun must be 'mean', 'weighted.mean' or 'median'", call. = FALSE)
+	else if(!(fun == 'mean' || fun == 'median' || fun == 'sd'))
+		stop("fun must be 'mean', 'median' or 'sd'.", call. = FALSE)
 
 	xl <- list()
 	for(i in 1:length(brks)) xl[[i]] <- x[brks[[i]], ]
@@ -80,7 +74,7 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 mean.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
 	xm <- x[1, , drop = FALSE]
-	xm[1, ] <- as.data.frame(sapply(x, mean, simplify = F))
+	xm[1, ] <- as.data.frame(sapply(x, mean, na.rm = TRUE, simplify = F))
 	xm
 }
 
@@ -94,7 +88,28 @@ mean.lisst <- function(x, ...) {
 median.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
 	xm <- x[1, , drop = FALSE]
-	xm[1, ] <- as.data.frame(sapply(x, median, simplify = F))
+	xm[1, ] <- as.data.frame(sapply(x, median, na.rm = TRUE, simplify = F))
+	xm
+}
+
+#' An S3 generic for sd
+#'@export
+
+sd <- function(x, ...) UseMethod("sd")
+sd.default <- stats::sd
+
+#' @describeIn lstat Compute the median for lisst objects
+#'
+#' @examples
+#' median(donkmeer_bin)
+#'
+#' @export
+
+sd.lisst <- function(x, ...) {
+	stopifnot(is.lisst(x))
+	xm <- x[1, , drop = FALSE]
+	xm$Time <- numeric(1)
+	xm[1, ] <- as.data.frame(sapply(x, sd, na.rm = TRUE, simplify = F))
 	xm
 }
 
