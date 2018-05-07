@@ -4,6 +4,7 @@
 \alias{lstat}
 \alias{mean.lisst}
 \alias{median.lisst}
+\alias{sd.lisst}
 \title{Descriptive statistics for lisst objects}
 \usage{
 lstat(x, brks, fun = "mean", ...)
@@ -11,6 +12,8 @@ lstat(x, brks, fun = "mean", ...)
 \method{mean}{lisst}(x, ...)
 
 \method{median}{lisst}(x, ...)
+
+\method{sd}{lisst}(x, ...)
 }
 \arguments{
 \item{x}{A lisst object.}
@@ -18,8 +21,8 @@ lstat(x, brks, fun = "mean", ...)
 \item{brks}{A vector with the breaks (intervals) for the aggregation. See 
 details.}
 
-\item{fun}{A function to perform the aggregation (mean or median). Defaults 
-to mean.}
+\item{fun}{A function to perform the aggregation (mean, median, sd). 
+Defaults to mean.}
 
 \item{...}{Arguments to be passed to aggregation functions.}
 }
@@ -31,22 +34,20 @@ intervals is also retrieved and stored.
 \details{
 The breaks (intervals) are passed directly to the subset function, so must 
 now be supplied in final form.
-
-The measure of dispersion in the aggregated data depends on the measure of 
-center. For the mean the dispersion is the standard deviation and for the 
-median it is 1.252 * the standard deviation of the mean, as derived from the 
-asymptotic variance formula of the median. See \code{?mean.errors} for 
-details.
 }
 \section{Methods (by generic)}{
 \itemize{
 \item \code{mean}: Compute the mean for lisst objects
 
 \item \code{median}: Compute the median for lisst objects
+
+\item \code{sd}: Compute the median for lisst objects
 }}
 
 \examples{
 mean(donkmeer_bin)
+
+median(donkmeer_bin)
 
 median(donkmeer_bin)
 
