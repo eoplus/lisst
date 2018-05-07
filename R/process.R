@@ -101,7 +101,7 @@ sd.default <- stats::sd
 #' @export
 sd.units <- function (x, ...) 
 {
-    .as.units(NextMethod(), units(x))
+    as.units(NextMethod(), units(x))
 }
 
 
