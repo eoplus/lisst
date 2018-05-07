@@ -97,6 +97,8 @@ median.lisst <- function(x, ...) {
 
 sd <- function(x, ...) UseMethod("sd")
 sd.default <- stats::sd
+
+#' @export
 sd.units <- function (x, ...) 
 {
     .as.units(NextMethod(), units(x))
