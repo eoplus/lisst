@@ -97,6 +97,12 @@ median.lisst <- function(x, ...) {
 
 sd <- function(x, ...) UseMethod("sd")
 sd.default <- stats::sd
+sd.units <- function (x, ...) 
+{
+    .as.units(NextMethod(), units(x))
+}
+
+
 
 #' @describeIn lstat Compute the median for lisst objects
 #'
