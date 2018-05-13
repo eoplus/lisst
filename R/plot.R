@@ -51,6 +51,8 @@
 #'               a regular series appropriate for raster representation.
 #' @param norm   Logic. Should the magnitude values de normalized? See details.
 #' @param legend Logic. Should a legend be added to the plot?
+#' @param total  Logic. Should an upper pannel with the total magnitude be 
+#'               added?
 #' @param col    A color pallete to be used. If not specified a default pallete 
 #'               will be used.
 #' @param yu     The units for the abscissa. See details.
@@ -94,7 +96,7 @@
 #'
 #' @export
 
-lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE, total = TRUE, rings, col, xlab, ylab, 
+lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE, total = TRUE, col, xlab, ylab, 
 	zlab, yu, zu) {
 
 	lmodl  <- attr(x, "lmodl")

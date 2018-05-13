@@ -336,14 +336,14 @@ lgetcal <- function(x) {
 		x[, "Depth"]       <- x[, "Depth"]       * linst$dpthcc[1] + linst$dpthcc[2]
 		x[, "Temperature"] <- x[, "Temperature"] * linst$tempcc[1] + linst$tempcc[2]
 		x[, "OptTrans"]    <- tau
-		x[, "BeamAtt"]     <- set_units(drop_units(-log(tau) / lmodl$pl), 1/m)
-		for(i in 1:lmodl$nring) x[, i] <- set_units(x[, i] * linst$ringcc, µW)
+		x[, "BeamAtt"]     <- set_units(drop_units(-log(tau) / lmodl$pl), '1/m')
+		for(i in 1:lmodl$nring) x[, i] <- set_units(x[, i] * linst$ringcc, 'µW')
 
 	} else {
 		wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
 		for(i in 1:lmodl$nring) 
 			x[, i] <- set_units(x[, i] * x[, "RLaser"] * (set_units(pi, 1) * lmodl$pl * 
-				set_units(wang[i]^2 - wang[i+1]^2, sr) / set_units(6, 1)), µW)
+				set_units(wang[i]^2 - wang[i+1]^2, 'sr') / set_units(6, 1)), 'µW')
 	}
 
 	attr(x, "type")  <- "cal"
@@ -400,7 +400,7 @@ lgetvsf <- function(x) {
 #		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_units(pi, 1) * lmodl$pl * 
 #				(wang[i]^2 - wang[i+1]^2) / set_units(6, 1)), 1/m/sr) # bug in errors?
 		x[, i] <- set_units(x[, i] / x[, "RLaser"] / (set_units(pi, 1) * lmodl$pl * 
-				((wang[i] * wang[i]) - (wang[i+1]*wang[i+1])) / set_units(6, 1)), 1/m/sr) # bug in errors?
+				((wang[i] * wang[i]) - (wang[i+1]*wang[i+1])) / set_units(6, 1)), '1/m/sr') # bug in errors?
 	}
 	attr(x, "type") <- "vsf"
 	x
@@ -448,11 +448,11 @@ lgetpnc <- function(x) {
 	lproc <- attr(x, "lproc")
 
         bins  <- lmodl$binr[[lproc$ity]]
-	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
+	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, 'L')
         binl  <- bins[, 2] - bins[, 1]
 	fact  <- nconc^-1 * binl^-1
 	for(i in 1:lmodl$nring) {
-		x[, i] <- set_units(x[, i] * fact[i] , 1/L/µm)
+		x[, i] <- set_units(x[, i] * fact[i] , '1/L/µm')
 	}
 	attr(x, "type") <- "pnc"
 	x
@@ -489,12 +489,12 @@ lgetvol <- function(x) {
 	lproc <- attr(x, "lproc")
 
         bins  <- lmodl$binr[[lproc$ity]]
-	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, L)
+	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, 'L')
         binl  <- bins[, 2] - bins[, 1]
 	fact  <- nconc^-1 * binl^-1
 	for(i in 1:lmodl$nring) {
 #		x[, i] <- set_units(x[, i] / fact[i], ppm) # Error; seems a bug in the development version of units...
-		x[, i] <- set_units(drop_units(x[, i] / fact[i]) * 1e6, ppm)
+		x[, i] <- set_units(drop_units(x[, i] / fact[i]) * 1e6, 'ppm')
 	}
 	attr(x, "type") <- "vol"
 	return(x)

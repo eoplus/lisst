@@ -78,14 +78,14 @@ lisst_reg <- function(model, path) {
 			X   = dat[, 5] == "X",
 			fzscat = zsc,
 			ringcf = set_units(rig, 1),
-			ringcc = set_units(5 / 4096 / dat[, 3], W),
+			ringcc = set_units(5 / 4096 / dat[, 3], 'W'),
 			volcc  = dat[, 4],
-			lpowcc = set_units(hk[grep("Laser Power", hkn), ], mW),
-			battcc = set_units(hk[grep("Battery", hkn), ], V),
-			extrcc = set_units(hk[grep("External Instrument", hkn), ], V),
-			lrefcc = set_units(hk[grep("Laser Reference", hkn), ], mW),
-			dpthcc = set_units(hk[grep("Depth", hkn), ], m),
-			tempcc = set_units(hk[grep("Temperature", hkn), ], `°C`)
+			lpowcc = set_units(hk[grep("Laser Power", hkn), ], 'mW'),
+			battcc = set_units(hk[grep("Battery", hkn), ], 'V'),
+			extrcc = set_units(hk[grep("External Instrument", hkn), ], 'V'),
+			lrefcc = set_units(hk[grep("Laser Reference", hkn), ], 'mW'),
+			dpthcc = set_units(hk[grep("Depth", hkn), ], 'm'),
+			tempcc = set_units(hk[grep("Temperature", hkn), ], '°C')
 		)
 
 		save(".LISSTi", file = file.path(find.package("lisst"), "R", "sysdata.rda"))

@@ -5,7 +5,7 @@
 \title{Hovmöller diagram for lisst objects}
 \usage{
 lhov(x, by = "sample", nbins = "pretty", norm = TRUE, legend = TRUE,
-  total = TRUE, rings, col, xlab, ylab, zlab, yu, zu)
+  total = TRUE, col, xlab, ylab, zlab, yu, zu)
 }
 \arguments{
 \item{x}{A lisst object.}
@@ -20,6 +20,9 @@ a regular series appropriate for raster representation.}
 \item{norm}{Logic. Should the magnitude values de normalized? See details.}
 
 \item{legend}{Logic. Should a legend be added to the plot?}
+
+\item{total}{Logic. Should an upper pannel with the total magnitude be 
+added?}
 
 \item{col}{A color pallete to be used. If not specified a default pallete 
 will be used.}
