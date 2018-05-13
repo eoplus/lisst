@@ -4,7 +4,7 @@
 \alias{read_lisst}
 \title{Read LISST data}
 \usage{
-read_lisst(fl, sn, pl, zscat, yr, out, model, trant = TRUE)
+read_lisst(fl, sn, pl, zscat, yr, out, model, tz = "UTC", trant = TRUE)
 }
 \arguments{
 \item{fl}{Path to processed or binary file (e.g., *.DAT for the 
@@ -19,11 +19,12 @@ argument model.}
 standard path length for the instrument model (with a warning), 
 i.e., no path reduction module in use.}
 
-\item{zscat}{Path to ASCII background data file (e.g., *.asc). This is 
-         required for processing binary files, with the exception of out 
-= 'raw'. It is optional for the LISST-200X, if it is desired to  
-         process the binary file with a different zscat than the 
-         internaly stored.}
+\item{zscat}{Background data. Might be provided as a raw lisst object or as a 
+         path to file (e.g., *.asc for LISST-100(X)). This is required 
+for processing binary files, with the exception of out = 'raw'. 
+It is optional for the LISST-200X, if it is desired to process 
+the binary file with a different zscat than the internaly 
+         stored.}
 
 \item{yr}{The year of first measurement in the data file. Only necessary 
 for LISST-100(X). If not provided, function will make a best 
@@ -36,6 +37,8 @@ guess (with a warning). See details.}
 LISST-200X). For the LISST-100(X), the detector type must be 
 included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
 provided.}
+
+\item{tz}{Time zone to interpret time indexing. Defaults to UTC.}
 
 \item{trant}{Logical. Should a optical transmittance threshold be applied? If
 TRUE, ring values for a given sample with transmittance < 0.3 
@@ -87,9 +90,14 @@ retrieve the particle size distribution (PSD) from binary data (inversion
 model not implemented), so 'vol' and 'pnc' can only be selected for processed 
 files. Functions \code{lget}, \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, 
 \code{lgetvsf}, \code{lgetvol} and \code{lgetpnc} allow to switch between 
-types without need to read from disk. 
+types without need to read from disk.
 
-A column "Time", with date/time in POSIXct format is added to all created 
+If the background data is saved as a binary file, it must be opened first 
+with \code{read_lisst} and aggregated to one row lisst object with 
+\link{lstat} before being passed to a new \code{read_lisst} call to open the 
+data itself. 
+
+The time indexing, with date/time in POSIX format is added to all created 
 objects. If yr is missing when reading a LISST-100(X) file, the function will 
 'guess' its value, by acessing the file system modification date information. 
 The modification date is used to be consistent across platforms, since 

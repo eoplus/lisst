@@ -28,7 +28,7 @@ NULL
 #' @export
 
 is.lisst <- function(x) {
-	inherits(x, "lisst") && any(!sapply(.lattributes(x), is.null)) && !is.null(x$Time)
+	inherits(x, "lisst") && any(!sapply(.lattributes(x), is.null))
 }
 
 #' drop lisst
@@ -37,7 +37,7 @@ is.lisst <- function(x) {
 #'
 #' @param x A lisst object.
 #'
-#' @return A \code{data.frame}, with all columns of class \code{quantities} in 
+#' @return A \code{data.frame}, with all columns of class \code{units} in 
 #' exception of those that contain time information.
 #'
 #' @examples
@@ -47,6 +47,7 @@ is.lisst <- function(x) {
 #' @export
 
 drop_lisst <- function(x) {
+	rownames(x) <- 1:nrow(x)
 	structure(x, type = NULL, lproc = NULL, linst = NULL, lmodl = NULL, 
 		zscat = NULL, lxts = NULL, class = "data.frame")
 }

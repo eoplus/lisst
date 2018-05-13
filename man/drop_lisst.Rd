@@ -10,7 +10,7 @@ drop_lisst(x)
 \item{x}{A lisst object.}
 }
 \value{
-A \code{data.frame}, with all columns of class \code{quantities} in 
+A \code{data.frame}, with all columns of class \code{units} in 
 exception of those that contain time information.
 }
 \description{

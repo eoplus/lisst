@@ -5,7 +5,7 @@
 \title{Hovmöller diagram for lisst objects}
 \usage{
 lhov(x, by = "sample", nbins = "pretty", norm = TRUE, legend = TRUE,
-  col, xlab, ylab, zlab, yu, zu)
+  total = TRUE, rings, col, xlab, ylab, zlab, yu, zu)
 }
 \arguments{
 \item{x}{A lisst object.}
@@ -33,10 +33,14 @@ Create Hovmöller diagram for lisst objects based on sample number,
 measurement time or depth.
 }
 \details{
+The abscissa of the Hovmöller diagram will show the ring number if data is 
+'raw' or 'cor' and the median angle or size of the bin, as appropriate for 
+the lisst object type.
+
 The z scale is provided in log10 for appropriate color mapping. However, 
-LISST 100 SOP will return x volume concentration if concentration is below 
-0.001 ppm. In that case, zeros as treated as half this minimul value, 0.0005 
-ppm.
+LISST SOP will return 0 volume concentration if concentration is below 0.001
+ppm. In that case, zeros as treated as half this minimul value, 0.0005 ppm 
+for ploting purposes only.
 
 If the lisst object is not regularly spaced in the chosen dimension, it will 
 be binned for raster representation. The nbins parameter will control the 

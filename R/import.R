@@ -5,11 +5,12 @@
 #'
 #' @param fl    Path to processed or binary file (e.g., *.DAT for the 
 #'              LISST-100(X)).
-#' @param zscat Path to ASCII background data file (e.g., *.asc). This is 
-#'              required for processing binary files, with the exception of out 
-#'		= 'raw'. It is optional for the LISST-200X, if it is desired to  
-#'              process the binary file with a different zscat than the 
-#'              internaly stored.
+#' @param zscat Background data. Might be provided as a raw lisst object or as a 
+#'              path to file (e.g., *.asc for LISST-100(X)). This is required 
+#'		for processing binary files, with the exception of out = 'raw'. 
+#'		It is optional for the LISST-200X, if it is desired to process 
+#'		the binary file with a different zscat than the internaly 
+#'              stored.
 #' @param pl    Path length in meters. If not provided the function will assume 
 #'              standard path length for the instrument model (with a warning), 
 #'              i.e., no path reduction module in use.
@@ -26,6 +27,7 @@
 #'              LISST-200X). For the LISST-100(X), the detector type must be 
 #'              included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
 #'              provided.
+#' @param tz    Time zone to interpret time indexing. Defaults to UTC.
 #' @param trant Logical. Should a optical transmittance threshold be applied? If
 #'              TRUE, ring values for a given sample with transmittance < 0.3 
 #'              are set to NA.
@@ -55,9 +57,14 @@
 #' model not implemented), so 'vol' and 'pnc' can only be selected for processed 
 #' files. Functions \code{lget}, \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, 
 #' \code{lgetvsf}, \code{lgetvol} and \code{lgetpnc} allow to switch between 
-#' types without need to read from disk. 
+#' types without need to read from disk.
 #'
-#' A column "Time", with date/time in POSIXct format is added to all created 
+#' If the background data is saved as a binary file, it must be opened first 
+#' with \code{read_lisst} and aggregated to one row lisst object with 
+#' \link{lstat} before being passed to a new \code{read_lisst} call to open the 
+#' data itself. 
+#'
+#' The time indexing, with date/time in POSIX format is added to all created 
 #' objects. If yr is missing when reading a LISST-100(X) file, the function will 
 #' 'guess' its value, by acessing the file system modification date information. 
 #' The modification date is used to be consistent across platforms, since 
@@ -137,107 +144,142 @@
 #'
 #' @export
 
-read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
+read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TRUE) {
 	if(!file.exists(fl))
 		stop(paste("File", fl, "not found"), call. = FALSE)
 
 	mode <- "processed"
-	if(length(grep('.(\\.asc|\\.csv)', fl, perl = TRUE)) < 1) mode <- "binary"
+	if(length(grep('.(\\.asc|\\.csv)', fl, perl = TRUE)) < 1)		# Find if file is processed or binary by extension
+		mode <- "binary"
 
-	if(missing(out) && mode == "processed") out <- "vol"
-	if(missing(out) && mode == "binary")    out <- "vsf"
+	if(missing(out) && mode == "processed") out <- "vol"			# Default output for processed files
+	if(missing(out) && mode == "binary")    out <- "vsf"			# Default output for binary files
 	if(mode == "processed" && !(out == "vol" || out == "pnc"))
-		stop("out for LISST SOP processed files must be 'vol' or 'pnc'", call. = FALSE)
+		stop("out for LISST SOP processed files must be 'vol' or 'pnc'", 
+			call. = FALSE)
 	if(mode == "binary" && (out == "vol" || out == "pnc"))
-		stop("out for binary LISST files must be 'raw', 'cor', 'cal' or vsf", call. = FALSE)
+		stop("out for binary LISST files must be 'raw', 'cor','cal' or", 
+			" vsf", call. = FALSE)
 
+	# Retrieve information on model, either from sn or model parameters:
 	if(missing(sn)) {
 		if(out == "cor" || out == "cal" || out == 'vsf')
-			stop("Processing of binary to 'cor', 'cal' or 'vsf' requires instrument specific ",
-				"information. sn of a registered instrument must be provided.", 
+			stop("Processing of binary to 'cor', 'cal' or 'vsf' ",
+				"requires instrument specific information. sn ",
+				"of a registered instrument must be provided.", 
 				call. = FALSE)
 		else if(missing(model))
-			stop("For reading processed files or for 'raw' outputs from binary files, ",
-				"model must be supplied if sn is not", call. = FALSE)
+			stop("For reading processed files or for 'raw' outputs", 
+				" from binary files, model must be supplied if", 
+				" sn is not", call. = FALSE)
 
 		linst <- list(X = FALSE)
 		if(length(grep("X", model)) > 0) linst$X <- TRUE
 		model <- sub("X", "", model)
+		linst$mod <- model
 		lmodl <- switch(model,
 			"200"  = .getmodp(list(mod = "200", dty = "A")),
 			"100B" = .getmodp(list(mod = "100", dty = "B")),
 			"100C" = .getmodp(list(mod = "100", dty = "C"))
 		)
 		if(is.null(lmodl))
-			stop("model must be one of '100(X)B', '100(X)C' or '200X'", call. = FALSE)
+			stop("model must be one of '100(X)B', '100(X)C' or ", 
+				"'200X'", call. = FALSE)
 		sn    <- NA
 	} else {
 		sn <- as.character(sn)
 		linst <- .LISSTi[[sn]]
 		if(is.null(linst))
-			stop("Instrument not registered. See ?lisst_reg", call. = FALSE)
+			stop("Instrument not registered. See ?lisst_reg", 
+				call. = FALSE)
 		lmodl <- .getmodp(linst)
 		model <- NULL
 	}
+
+	# Check that zscat is necessary and if exists:
 	if(missing(zscat)) {
 		if(out == 'cor' || out == 'cal' || out == 'vsf')
-			stop("zscat must be provided for out 'cor', 'cal' or 'vsf'", call. = FALSE)
+			stop("zscat must be provided for out 'cor', 'cal' or ", 
+				"'vsf'", call. = FALSE)
 		else
 			zscat <- NULL
-	} else if(!file.exists(zscat)) {
-		if(out == 'cor' || out == 'cal' || out == 'vsf')
-			stop(paste("File", zscat, "not found"), call. = FALSE)
-		else {
-			zscat <- NULL
-			warning(paste("File", zscat, "not found; zscat data will not be",
-				"added to lisst object"), call. = FALSE)
+	} else if(is.character(zscat)) {
+		if(!file.exists(zscat)) {
+			if(out == 'cor' || out == 'cal' || out == 'vsf')
+				stop(paste("File", zscat, "not found"), 
+					call. = FALSE)
+			else {
+				zscat <- NULL
+				warning(paste("File", zscat, "not found; zscat", 
+					" data will not be added to lisst ", 
+					"object"), call. = FALSE)
+			}
 		}
 	}
 
-	# It is not setting directly the pl component of lmodl because .lisst_pro
-	# will need to compensate the beam attenuation with a factor based on the 
-	# standard pl of the model.
+	# lmodl$pl is not set directly here from pl parameter because .lisst_pro
+	# will need to compensate the beam attenuation (and the volume 
+	# concentration) with a factor based on the standard pl of the model:
 	if(missing(pl)) {
 		warning(paste("pl not provided - assuming standard path length"), 
 			call. = FALSE)
 		pl <- lmodl$pl
 	} else if(pl > drop_units(lmodl$pl)) {
-		stop(paste0("Path length in LISST-", linst$mod, " cannot be larger than ", 
-			drop_units(lmodl$pl), " m"), call. = FALSE)
+		stop(paste0("Path length in LISST-", linst$mod, " cannot be ", 
+			"larger than ", drop_units(lmodl$pl), " m"), 
+			call. = FALSE)
 	}
-	pl <- set_units(pl, m)
+	pl <- set_units(pl, 'm')
 
+	# Manage year for 100(X) models:
 	guess <- FALSE
 	if(missing(yr)) {
 		if(lmodl$mod == "100")
-			warning("yr not provided - using best guess", call. = FALSE)
+			warning("yr not provided - using best guess", 
+				call. = FALSE)
 		yr  <- format(file.info(fl)$mtime, "%Y")
 		guess <- TRUE
 	}
 
-
+	# Call specific import functions:
 	if(mode == "binary") {
 		if(lmodl$mod == "100" && grep('.\\.DAT', fl, perl = TRUE) < 1)
-			stop("LISST-100(X) binary files must have a .DAT extension", call. = FALSE)
+			stop("LISST-100(X) binary files must have a .DAT ", 
+				"extension", call. = FALSE)
 		if(lmodl$mod == "200" && grep('.\\.RBN', fl, perl = TRUE) < 1)
-			stop("LISST-200X binary files must have a .RBN extension", call. = FALSE)
-		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, 
-			lmodl = lmodl)
-		lo$Time <- .lgdate(lo, yr, guess)
-		lo <- lget(lo, out)
+			stop("LISST-200X binary files must have a .RBN ", 
+				"extension", call. = FALSE)
+		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, 
+			linst = linst, lmodl = lmodl)
 	} else {
-		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, linst = linst, 
-			lmodl = lmodl)
-		lo$Time <- .lgdate(lo, yr, guess)
-		if(out == 'pnc') lo <- lgetpnc(lo)
+		if(lmodl$mod == "100" && grep('.\\.asc', fl, perl = TRUE) < 1)
+			stop("LISST-100(X) processed files must have a .asc ", 
+				"extension", call. = FALSE)
+		if(lmodl$mod == "200" && grep('.\\.csv', fl, perl = TRUE) < 1)
+			stop("LISST-200X processed files must have a .csv ", 
+				"extension", call. = FALSE)
+		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, 
+			linst = linst, lmodl = lmodl)
 	}
 
+	# Get time reference:
+	ti <- .lgdate(lo, yr, tz, guess)
+	tr <- as.numeric(difftime(max(ti), min(ti), units = "sec"))
+	ti <- rep(ti[1], nrow(lo)) + 						# Add precision to avoid duplicate rownames
+		cumsum(c(0, rep(tr / (nrow(lo) - 1), nrow(lo) - 1)))
+
+	rownames(lo) <- format(ti, "%Y-%m-%d %H:%M:%OS1 %Z")
+	lo <- lget(lo, out)
+	lo <- lo[, -which(colnames(lo) %in% c("Time1", "Time2", "Year", 	# Remove the original time columns
+		"Month", "Day", "Hour", "Minute", "Second"))]
+
+	# Apply simple quality check:
 	if(mode == 'binary' & is.null(zscat)) trant <- FALSE
 	if(trant) {
 		if(out == 'raw' | out == 'cor')
-			ot <- lget(lo, 'cal')[, "Optical transmission"]
+			ot <- lget(lo, 'cal')[, "OptTrans"]
 		else
-			ot <- lo[, "Optical transmission"]
+			ot <- lo[, "OptTrans"]
 		id  <- which(drop_units(ot) < 0.3)
 		for(i in id) lo[i, 1:attr(lo, 'lmodl')$nring] <- NA
 	}
@@ -265,27 +307,38 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 	}
 	lo <- as.data.frame(lo)
 	colnames(lo) <- lmodl$lvarn
-	mfact <- drop_units(lmodl$pl / pl)
-	for(i in 1:lmodl$nring) lo[, i] <- lo[, i] * mfact
-	lo[, "Beam attenuation"] <- lo[, "Beam attenuation"] * mfact
-	lmodl$pl <- pl
+	mfact <- drop_units(lmodl$pl / pl)					# PRM correction factor
+	for(i in 1:lmodl$nring) lo[, i] <- lo[, i] * mfact			# PRM correction for volume concentration
+	lo[, "BeamAtt"] <- lo[, "BeamAtt"] * mfact				# PRM correction for beam attenuation
+	lmodl$pl <- pl								# Store the true path length in object metadata
 
+	# Process background data:
 	zscatd <- rep(as.numeric(NA), lmodl$bnvar)
 	if(!(missing(zscat) || is.null(zscat)))
-		if(file.exists(zscat))
+		if(is.lisst(zscat)) {
+			if(nrow(zscat) > 1)
+				stop("A lisst object used as zscat must have a", 
+					" single row. Use lstat for ", 
+					"aggregation.", call. = FALSE)
+			zscatd <- drop_lisst(lget(zscat, 'raw'))
+		} else if(file.exists(zscat)) {
 			zscatd <- as.numeric(read.table(zscat)[, 1])
+		}
 	zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
 	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
-	id <- setdiff(lmodl$lvarn, c("Time1","Time2","Year","Month","Day","Hour","Minute","Second"))
+	# Add units, avoiding data columns related to time:
+	id <- setdiff(lmodl$lvarn, c("Time1", "Time2", "Year", "Month", "Day", 
+		"Hour", "Minute", "Second"))
 	id <- which(lmodl$lvarn %in% id)
 	for(i in id) {
 		units(lo[, i]) <- lmodl$varun[i]
 		if(i < lmodl$bnvar) units(zscatd[, i]) <- 1
 	}
 
-	lo <- structure(lo, type = 'vol', lproc = list(ity = ity), linst = linst, 
-		lmodl = lmodl, zscat = zscatd, class = c("lisst", "data.frame"))
+	lo <- structure(lo, type = 'vol', lproc = list(ity = ity), 
+		linst = linst, lmodl = lmodl, zscat = zscatd, 
+		class = c("lisst", "data.frame"))
 	return(lo)
 }
 
@@ -297,9 +350,9 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 .lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
 	lmodl$pl <- pl
 	if(lmodl$mod == "100") {
-		lo <- readBin(fl, "integer", n = file.info(fl)$size, size = 1, signed = FALSE, 
-			endian = "little")
-		lo <- lo[seq(1, length(lo), 2)] * 256 + lo[seq(2, length(lo), 2)]
+		lo <- readBin(fl, "integer", n = file.info(fl)$size, size = 1, 
+			signed = FALSE, endian = "little")
+		lo <- lo[seq(1, length(lo), 2)] * 256 + lo[seq(2,length(lo), 2)]
 		nrows <- floor(length(lo) / lmodl$bnvar)
 		lo <- lo[1:(nrows * lmodl$bnvar)]
 		lo <- matrix(lo, nrow = nrows, byrow = TRUE)
@@ -309,24 +362,31 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 
 		zscatd <- rep(as.numeric(NA), lmodl$bnvar)
 		if(!(missing(zscat) || is.null(zscat)))
-			if(file.exists(zscat))
+			if(is.lisst(zscat)) {
+				if(nrow(zscat) > 1)
+					stop("A lisst object used as zscat ", 
+					"must have a single row. Use lstat for", 
+					" aggregation.", call. = FALSE)
+				zscatd <- drop_lisst(lget(zscat, 'raw'))
+			} else if(file.exists(zscat)) {
 				zscatd <- as.numeric(read.table(zscat)[, 1])
+			}
 		zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
 		names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
 		lo <- as.data.frame(lo)
 		colnames(lo) <- lmodl$lvarn[1:lmodl$bnvar]
-		id <- setdiff(lmodl$lvarn[1:lmodl$bnvar], c("Time1","Time2","Year","Month","Day",
-			"Hour","Minute","Second"))
+		id <- setdiff(lmodl$lvarn[1:lmodl$bnvar], c("Time1", "Time2", 
+			"Year", "Month", "Day", "Hour", "Minute", "Second"))
 		id <- which(lmodl$lvarn %in% id)
 		for(i in id) {
 			units(lo[, i]) <- 1
 			units(zscatd[, i]) <- 1
 		}
 
-		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), linst = linst, 
-			lmodl = lmodl, zscat = zscatd, class = c("lisst", 
-			"data.frame"))
+		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), 
+			linst = linst, lmodl = lmodl, zscat = zscatd, 
+			class = c("lisst", "data.frame"))
 		return(lo)
 	}
 
@@ -350,12 +410,12 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 # details
 # If yr was not provided by the user, read_lisst will call lgdate with guess = 
 # TRUE. This informs the function that the year passed is an estimate of the 
-# last year of measurement, not the first as the yr passed by the user. It was kept
-# this way since LISST users might be used to that way of informing date, but the
-# guess date has to be about the last measurement. See the details of the 
-# read_lisst function on how the guess is made.
+# last year of measurement, not the first as the yr passed by the user. It was 
+# kept this way since LISST users might be used to that way of informing date, 
+# but the guess date has to be about the last measurement. See the details of 
+# the read_lisst function on how the guess is made.
 
-.lgdate <- function(lo, yr, guess = FALSE) {
+.lgdate <- function(lo, yr, tz, guess = FALSE) {
 	lmodl <- attr(lo, "lmodl")
 	lo    <- drop_lisst(lo) 
 	if(lmodl$mod == "100") {
@@ -371,11 +431,12 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, trant = TRUE) {
 		hour   <- round(((lo[, 39] / 100) - julian) * 100)
 		min    <- floor(lo[, 40] / 100)
         	sec    <- round(((lo[, 40] / 100) - min) * 100)
-        	dates  <- as.POSIXct(paste(yr, julian, hour, min, sec, sep = "-"), 
-			format = "%Y-%j-%H-%M-%S")
+        	dates  <- as.POSIXct(paste(yr, julian, hour, min, sec, 
+			sep = "-"), format = "%Y-%j-%H-%M-%S", tz = tz)
 	} else if(lmodl$mod == "200") {
-		dates  <- as.POSIXct(paste(lo[, 43], lo[, 44], lo[, 45], lo[, 46], lo[, 47], 
-				lo[, 48], sep = "-"), format = "%Y-%m-%d-%H-%M-%S")
+		dates  <- as.POSIXct(paste(lo[, 43], lo[, 44], lo[, 45], 
+				lo[, 46], lo[, 47], lo[, 48], sep = "-"), 
+				format = "%Y-%m-%d-%H-%M-%S", tz = tz)
 	}
 	return(dates)
 }

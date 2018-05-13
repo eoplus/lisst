@@ -1,11 +1,12 @@
 
-#' Auxiliary plotting functions
+#' Auxiliary plotting functions:
 
 .xaxn <- function(x, by) {
 	switch(by,
-	sample = list("Sample Number", 1:nrow(x)),
-	depth  = list(units::make_unit_label("'Depth'", x$Depth), x$Depth),
-	time   = list("Time", x$Time))
+		sample = list("Sample Number", 1:nrow(x)),
+		depth  = list(make_unit_label("'Depth'", x$Depth), x$Depth),
+		time   = list("Time", ltime(x))
+	)
 }
 
 .yaxn <- function(x) {
@@ -56,10 +57,14 @@
 #' @param zu     The units for the magnitude values. See details.
 #'
 #' @details
+#' The abscissa of the Hovmöller diagram will show the ring number if data is 
+#' 'raw' or 'cor' and the median angle or size of the bin, as appropriate for 
+#' the lisst object type.
+#' 
 #' The z scale is provided in log10 for appropriate color mapping. However, 
-#' LISST 100 SOP will return x volume concentration if concentration is below 
-#' 0.001 ppm. In that case, zeros as treated as half this minimul value, 0.0005 
-#' ppm.
+#' LISST SOP will return 0 volume concentration if concentration is below 0.001
+#' ppm. In that case, zeros as treated as half this minimul value, 0.0005 ppm 
+#' for ploting purposes only.
 #'
 #' If the lisst object is not regularly spaced in the chosen dimension, it will 
 #' be binned for raster representation. The nbins parameter will control the 
@@ -89,24 +94,11 @@
 #'
 #' @export
 
-lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE, col, xlab, ylab, 
+lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE, total = TRUE, rings, col, xlab, ylab, 
 	zlab, yu, zu) {
 
 	lmodl  <- attr(x, "lmodl")
 	lty    <- attr(x, "type")
-	xm     <- do.call(rbind, x[, 1:lmodl$nring])
-	units(xm) <- units(x[, 1])
-	if(lty == 'vol' | lty == 'pnc') {
-		xm[drop_units(xm) == 0] <- 0.0005
-	}
-
-	if(legend && norm) {
-		layout(matrix(c(1, 2, 3), ncol = 1), heights = c(1, 4, 1))
-	} else if(legend) {
-		layout(matrix(c(1, 2), ncol = 1), heights = c(4, 1))
-	} else if(norm) {
-		layout(matrix(c(1, 2), ncol = 1), heights = c(1, 4))
-	}
 
 	xaxn <- .xaxn(x, by)
 	if(missing(xlab)) xlab <- xaxn[[1]]
@@ -120,21 +112,59 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 		else zlab <- units::make_unit_label(zaxn, x[, 1])
 	}
 
-	if(!all(diff(xaxn[[2]]))) stop('Binning for irregular dimension not implemented...')
+	if(by == 'time' && any(diff(xaxn[[2]]) < 0))
+		stop('Time index must be monotonicaly increasing', call. = F)
+	if(by == 'depth') {
+		if(diff(range(diff(drop_units(xaxn[[2]])))) != 0) {
+			warning('Bining irregular data', call. = F)
+			hx <- hist(drop_units(xaxn[[2]]), plot = F)
+			bx <- hx$breaks
+			bx <- c(bx[1], rep(bx[-c(1, length(bx))], each = 2), bx[length(bx)])
+			dim(bx) <- c(2, length(bx) / 2)
+			lx <- list()
+			for(i in 1:ncol(bx)) lx[[i]] <- paste(bx[, i], collapse = "|")
+			x <- lstat(x, brks = lx, 'mean')
+			units(hx$mids) <- units(xaxn[[2]])
+			xaxn[[2]] <- hx$mids
+		}
+	}
+
+	# Deal with possible zeros in 'vol' and 'pnc'. 
+	# The LISST SOP will give a 0 if concentration is below 0.001 ppm.
+	if(lty == 'vol' | lty == 'pnc') {
+		x    <- lget(x, 'vol')
+		for(i in 1:lmodl$nring)
+			x[, i][which(drop_units(x[, i]) == 0)] <- 0.0005
+		x <- lget(x, lty)				
+	}
+
+	xm     <- do.call(rbind, x[, 1:lmodl$nring])
+	units(xm) <- units(x[, 1])
+
+	if(legend && total) {
+		layout(matrix(c(1, 2, 3), ncol = 1), heights = c(1, 4, 1))
+	} else if(legend) {
+		layout(matrix(c(1, 2), ncol = 1), heights = c(4, 1))
+	} else if(total) {
+		layout(matrix(c(1, 2), ncol = 1), heights = c(1, 4))
+	}
 
 	if(missing(col)) {
 		col <- colorRampPalette(c("#011F4B", "#03396C", "#005B96", "#6497B1", "#B3CDE0"))(256)
 	}
 
+	xs <- xm[1, ]
+	for(i in 1:ncol(xm)) xs[i] <- sum(xm[, i], na.rm = T)
 	if(norm) {
-		xs <- xm[1, ]
-		for(i in 1:ncol(xm)) xs[i] <- sum(xm[, i], na.rm = T)
-		xm   <- xm / rep(xs, each = nrow(xm))
-		par(mar = c(0, 5, 0, 1))
+		xm <- xm / rep(xs, each = nrow(xm))
+	}
+
+	if(total) {
+		par(mar = c(0, 5, 0, 1), las = 1)
 		nylab <- units::make_unit_label('Total', x[, 1])
 		plot(xaxn[[2]], drop_units(xs), axes = F, xlab = "", type = "l", xaxs = 'i', 
 			ylab = nylab, log = 'y')
-		axis(2)
+		axis(2, crt = 90)
 	}
 
 	par(mar = c(5, 5, 2, 1))

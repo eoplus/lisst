@@ -34,6 +34,11 @@ intervals is also retrieved and stored.
 \details{
 The breaks (intervals) are passed directly to the subset function, so must 
 now be supplied in final form.
+
+The resulting time indexing will always be the average of the time of the 
+imput records. In the case of aggregation by depth, time indexing will most
+likelly not be regular or monotonic. In these cases, plot functions that can
+have different ordinates should always be by 'depth'.
 }
 \section{Methods (by generic)}{
 \itemize{

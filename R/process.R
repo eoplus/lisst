@@ -1,4 +1,41 @@
 
+#' Extract time index
+#'
+#' This function extracts the time index of each observation.
+#'
+#' @param x  A lisst object.
+#'
+#' @export
+
+ltime <- function(x) {
+	stopifnot(is.lisst(x))
+	as.POSIXct(rownames(x))
+}
+
+#' Sum of ring values
+#'
+#' The function performs a sum over the specified rings.
+#'
+#' @param x     A lisst object.
+#' @param rings The rings to be summed.
+#'
+#' @details
+#' If parameter rings is not supplied, sum will be performed over all rings.
+#'
+#' @export
+
+lrings <- function(x, rings) {
+	stopifnot(is.lisst(x))
+	lmodl <- attr(x, 'lmodl')
+	linst <- attr(x, 'linst')
+	if(missing(rings)) rings <- 1:lmodl$nring
+	if(max(rings) > lmodl$nring)
+		stop(paste0('Maximum rings in LISST-', lmodl$mod, 
+			ifelse(linst$X, 'X', ''), " is ", lmodl$nring), 
+			call. = FALSE)
+	apply(as.matrix(x[, rings]), 1, sum, na.rm = T)
+}
+
 #' Fit a PSD model to the lisst data
 #'
 #' The function performs a fit of the available models of PSD.
@@ -48,19 +85,24 @@ lfit <- function(x, model) {
 #' The breaks (intervals) are passed directly to the subset function, so must 
 #' now be supplied in final form.
 #'
+#' The resulting time indexing will always be the average of the time of the 
+#' imput records. In the case of aggregation by depth, time indexing will most
+#' likelly not be regular or monotonic. In these cases, plot functions that can
+#' have different ordinates should always be by 'depth'.
+#'
 #' @export
 
 lstat <- function(x, brks, fun = 'mean', ...) {
 	stopifnot(is.lisst(x))
 	if(missing(brks)) stop("brks missing, with no default", call. = FALSE)
+	if(!is(brks, 'list')) stop('brks must be a list', call. = FALSE)
 	if(missing(fun)) fun <- 'mean'
 	else if(!(fun == 'mean' || fun == 'median' || fun == 'sd'))
 		stop("fun must be 'mean', 'median' or 'sd'.", call. = FALSE)
 
 	xl <- list()
-	for(i in 1:length(brks)) xl[[i]] <- x[brks[[i]], ]
+	for(i in 1:length(brks)) xl[[i]] <- x[brks[[i]], , drop = FALSE]
 	xb <- do.call(rbind, lapply(xl, fun, ...))
-	rownames(xb) <- 1:nrow(xb)
 	xb
 }
 
@@ -73,8 +115,10 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 
 mean.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
+	if(nrow(x) == 1) return(x)
 	xm <- x[1, , drop = FALSE]
 	xm[1, ] <- as.data.frame(sapply(x, mean, na.rm = TRUE, simplify = F))
+	rownames(xm) <- format(mean(ltime(x)), "%Y-%m-%d %H:%M:%OS1 %Z")
 	xm
 }
 
@@ -87,23 +131,20 @@ mean.lisst <- function(x, ...) {
 
 median.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
+	if(nrow(x) == 1) return(x)
 	xm <- x[1, , drop = FALSE]
 	xm[1, ] <- as.data.frame(sapply(x, median, na.rm = TRUE, simplify = F))
+	rownames(xm) <- format(mean(ltime(x)), "%Y-%m-%d %H:%M:%OS1 %Z")
 	xm
 }
 
 #' An S3 generic for sd
-#'@export
+#' @export
 
 sd <- function(x, ...) UseMethod("sd")
-sd.default <- stats::sd
 
 #' @export
-sd.units <- function (x, ...) 
-{
-    as.units(NextMethod(), units(x))
-}
-
+sd.default <- stats::sd
 
 
 #' @describeIn lstat Compute the median for lisst objects
@@ -117,7 +158,9 @@ sd.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
 	xm <- x[1, , drop = FALSE]
 	xm$Time <- numeric(1)
+	if(nrow(x) == 1) return(xm-xm)
 	xm[1, ] <- as.data.frame(sapply(x, sd, na.rm = TRUE, simplify = F))
+	rownames(xm) <- format(mean(ltime(x)), "%Y-%m-%d %H:%M:%OS1 %Z")
 	xm
 }
 

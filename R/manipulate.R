@@ -34,7 +34,7 @@
 c.lisst <- function(...) {
 	x   <- list(...)
 	for(i in 1:length(x)) {
-		if(!is.lisst(x[[1]])) stop(paste("Argument", i, "is not a lisst object"), call. = F)
+		if(!is.lisst(x[[i]])) stop(paste("Argument", i, "is not a lisst object"), call. = F)
 	}
 	typ <- attr(x[[1]], "type")
 	x   <- lapply(x, lget, type = typ)
@@ -77,7 +77,7 @@ c.lisst <- function(...) {
 
 `[.lisst` <- function(x, i, j, ..., drop = TRUE) {
 	stopifnot(is.lisst(x))
-	lxts <- xts(rep(1, nrow(x)), order.by = x$Time, unique = FALSE)
+	lxts <- xts(rep(1, nrow(x)), order.by = ltime(x), unique = FALSE)
 	if(!missing(i)) {
 		if(is.character(i)) {
 			if(length(i) > 1) {
@@ -99,12 +99,12 @@ c.lisst <- function(...) {
 		NextMethod(drop = drop)
 	} else {
 		structure(NextMethod(drop = drop), 
-			"type"  = attr(x, "type"),
-			"lproc" = attr(x, "lproc"),
-			"linst" = attr(x, "linst"),
-			"lmodl" = attr(x, "lmodl"),
-			"zscat" = attr(x, "zscat"),
-			class   = c("lisst", "data.frame"))
+			'type'  = attr(x, 'type'),
+			'lproc' = attr(x, 'lproc'),
+			'linst' = attr(x, 'linst'),
+			'lmodl' = attr(x, 'lmodl'),
+			'zscat' = attr(x, 'zscat'),
+			class   = c('lisst', 'data.frame'))
 	}
 }
 
@@ -195,14 +195,14 @@ lgetraw <- function(x) {
 	lmodl <- attr(x, "lmodl")
 
 	wext <- set_units(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1)
-	tau  <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
-		zscat[, "Laser transmission"] / x[, "Laser reference"]
+	tau  <- x[, "TLaser"] * zscat[, "RLaser"] / 
+		zscat[, "TLaser"] / x[, "RLaser"]
 
 	for(i in 1:lmodl$nring) {
 		x[, i] <- x[, i] / linst$ringcf[i]
 		x[, i] <- x[, i] * wext
-		x[, i] <- (x[, i] + (zscat[, i] * x[, "Laser reference"] / 
-			zscat[, "Laser reference"])) * tau
+		x[, i] <- (x[, i] + (zscat[, i] * x[, "RLaser"] / 
+			zscat[, "RLaser"])) * tau
 	}
 
 	attr(x, "type")  <- "raw"
@@ -261,26 +261,27 @@ lgetcor <- function(x) {
 	lmodl <- attr(x, "lmodl")
 	if(typ == 'raw') {
 		wext <- set_units(exp(-(aw670 + bw670) * as.numeric(lmodl$pl)), 1)
-		tau  <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
-			zscat[, "Laser transmission"] / x[, "Laser reference"]
+		tau  <- x[, "TLaser"] * zscat[, "RLaser"] / 
+			zscat[, "TLaser"] / x[, "RLaser"]
+		tau[drop_units(tau) <= 0] <- set_units(as.numeric(NA), 1)
 
 		for(i in 1:lmodl$nring) {
-			x[, i] <- x[, i] / tau - (zscat[, i] * x[, "Laser reference"] / 
-				zscat[, "Laser reference"])
+			x[, i] <- x[, i] / tau - (zscat[, i] * x[, "RLaser"] / 
+				zscat[, "RLaser"])
 			x[, i] <- x[, i] / wext
 			x[, i] <- x[, i] * linst$ringcf[i]
 			x[, i][drop_units(x[, i]) < 0] <- 0
 		}
 	} else {
-		x[, "Laser transmission"] <- (x[, "Laser transmission"] - linst$lpowcc[2]) / linst$lpowcc[1]
-		x[, "Battery voltage"]    <- (x[, "Battery voltage"]    - linst$battcc[2]) / linst$battcc[1]
-		x[, "External input 1"]   <- (x[, "External input 1"]   - linst$extrcc[2]) / linst$extrcc[1]
-		x[, "Laser reference"]    <- (x[, "Laser reference"]    - linst$lrefcc[2]) / linst$lrefcc[1]
-		x[, "Depth"]              <- (x[, "Depth"]              - linst$dpthcc[2]) / linst$dpthcc[1]
-		x[, "Temperature"]        <- (x[, "Temperature"]        - linst$tempcc[2]) / linst$tempcc[1]
+		x[, "TLaser"]      <- (x[, "TLaser"]      - linst$lpowcc[2]) / linst$lpowcc[1]
+		x[, "Battery"]     <- (x[, "Battery"]     - linst$battcc[2]) / linst$battcc[1]
+		x[, "ExtI1"]       <- (x[, "ExtI1"]       - linst$extrcc[2]) / linst$extrcc[1]
+		x[, "RLaser"]      <- (x[, "RLaser"]      - linst$lrefcc[2]) / linst$lrefcc[1]
+		x[, "Depth"]       <- (x[, "Depth"]       - linst$dpthcc[2]) / linst$dpthcc[1]
+		x[, "Temperature"] <- (x[, "Temperature"] - linst$tempcc[2]) / linst$tempcc[1]
 		for(i in 1:lmodl$nring) x[, i] <- x[, i] / linst$ringcc
-		x <- x[, -which(names(x) == "Optical transmission"), drop = FALSE]
-		x <- x[, -which(names(x) == "Beam attenuation"), drop = FALSE]
+		x <- x[, -which(names(x) == "OptTrans"), drop = FALSE]
+		x <- x[, -which(names(x) == "BeamAtt"), drop = FALSE]
 	}
 	attr(x, "type")  <- "cor"
 	x
@@ -324,22 +325,24 @@ lgetcal <- function(x) {
 	lmodl <- attr(x, "lmodl")
 
 	if(typ == 'cor') {
-		tau <- x[, "Laser transmission"] * zscat[, "Laser reference"] / 
-			zscat[, "Laser transmission"] / x[, "Laser reference"]
+		tau <- x[, "TLaser"] * zscat[, "RLaser"] / 
+			zscat[, "TLaser"] / x[, "RLaser"]
+		tau[drop_units(tau) <= 0] <- set_units(as.numeric(NA), 1)
 
-		x[, "Laser transmission"]   <- x[, "Laser transmission"] * linst$lpowcc[1] + linst$lpowcc[2]
-		x[, "Battery voltage"]      <- x[, "Battery voltage"]    * linst$battcc[1] + linst$battcc[2]
-		x[, "External input 1"]     <- x[, "External input 1"]   * linst$extrcc[1] + linst$extrcc[2]
-		x[, "Laser reference"]      <- x[, "Laser reference"]    * linst$lrefcc[1] + linst$lrefcc[2]
-		x[, "Depth"]                <- x[, "Depth"]              * linst$dpthcc[1] + linst$dpthcc[2]
-		x[, "Temperature"]          <- x[, "Temperature"]        * linst$tempcc[1] + linst$tempcc[2]
-		x[, "Optical transmission"] <- tau
-		x[, "Beam attenuation"]     <- set_units(drop_units(-log(tau) / lmodl$pl), 1/m)
+		x[, "TLaser"]      <- x[, "TLaser"]      * linst$lpowcc[1] + linst$lpowcc[2]
+		x[, "Battery"]     <- x[, "Battery"]     * linst$battcc[1] + linst$battcc[2]
+		x[, "ExtI1"]       <- x[, "ExtI1"]       * linst$extrcc[1] + linst$extrcc[2]
+		x[, "RLaser"]      <- x[, "RLaser"]      * linst$lrefcc[1] + linst$lrefcc[2]
+		x[, "Depth"]       <- x[, "Depth"]       * linst$dpthcc[1] + linst$dpthcc[2]
+		x[, "Temperature"] <- x[, "Temperature"] * linst$tempcc[1] + linst$tempcc[2]
+		x[, "OptTrans"]    <- tau
+		x[, "BeamAtt"]     <- set_units(drop_units(-log(tau) / lmodl$pl), 1/m)
 		for(i in 1:lmodl$nring) x[, i] <- set_units(x[, i] * linst$ringcc, µW)
+
 	} else {
 		wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
 		for(i in 1:lmodl$nring) 
-			x[, i] <- set_units(x[, i] * x[, "Laser reference"] * (set_units(pi, 1) * lmodl$pl * 
+			x[, i] <- set_units(x[, i] * x[, "RLaser"] * (set_units(pi, 1) * lmodl$pl * 
 				set_units(wang[i]^2 - wang[i+1]^2, sr) / set_units(6, 1)), µW)
 	}
 
@@ -396,7 +399,7 @@ lgetvsf <- function(x) {
 	for(i in 1:lmodl$nring) {
 #		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_units(pi, 1) * lmodl$pl * 
 #				(wang[i]^2 - wang[i+1]^2) / set_units(6, 1)), 1/m/sr) # bug in errors?
-		x[, i] <- set_units(x[, i] / x[, "Laser reference"] / (set_units(pi, 1) * lmodl$pl * 
+		x[, i] <- set_units(x[, i] / x[, "RLaser"] / (set_units(pi, 1) * lmodl$pl * 
 				((wang[i] * wang[i]) - (wang[i+1]*wang[i+1])) / set_units(6, 1)), 1/m/sr) # bug in errors?
 	}
 	attr(x, "type") <- "vsf"
