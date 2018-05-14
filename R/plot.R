@@ -46,9 +46,6 @@
 #' @param x      A lisst object.
 #' @param by     Ordinate axis dimension. Must be one of 'sample', 'time' or 
 #'               'depth'.
-#' @param nbins  If the lisst object is not regular in the dimension specified 
-#'               parameter by, nbins controls the binning of the data to achieve 
-#'               a regular series appropriate for raster representation.
 #' @param norm   Logic. Should the magnitude values de normalized? See details.
 #' @param legend Logic. Should a legend be added to the plot?
 #' @param total  Logic. Should an upper pannel with the total magnitude be 
@@ -96,12 +93,13 @@
 #'
 #' @export
 
-lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE, total = TRUE, col, xlab, ylab, 
+lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col, xlab, ylab, 
 	zlab, yu, zu) {
 
 	lmodl  <- attr(x, "lmodl")
 	lty    <- attr(x, "type")
 
+	# Get axis, labels and set units:
 	xaxn <- .xaxn(x, by)
 	if(missing(xlab)) xlab <- xaxn[[1]]
 	yaxn <- .yaxn(x)
@@ -114,6 +112,7 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 		else zlab <- units::make_unit_label(zaxn, x[, 1])
 	}
 
+	# Check ordinates:
 	if(by == 'time' && any(diff(xaxn[[2]]) < 0))
 		stop('Time index must be monotonicaly increasing', call. = F)
 	if(by == 'depth') {
@@ -134,7 +133,7 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 	# Deal with possible zeros in 'vol' and 'pnc'. 
 	# The LISST SOP will give a 0 if concentration is below 0.001 ppm.
 	if(lty == 'vol' | lty == 'pnc') {
-		x    <- lget(x, 'vol')
+		x <- lget(x, 'vol')
 		for(i in 1:lmodl$nring)
 			x[, i][which(drop_units(x[, i]) == 0)] <- 0.0005
 		x <- lget(x, lty)				
@@ -143,6 +142,7 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 	xm     <- do.call(rbind, x[, 1:lmodl$nring])
 	units(xm) <- units(x[, 1])
 
+	# Set device division:
 	if(legend && total) {
 		layout(matrix(c(1, 2, 3), ncol = 1), heights = c(1, 4, 1))
 	} else if(legend) {
@@ -162,7 +162,7 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 	}
 
 	if(total) {
-		par(mar = c(0, 5, 0, 1), las = 1)
+		par(mar = c(0, 5, 0.5, 1), las = 1)
 		nylab <- units::make_unit_label('Total', x[, 1])
 		plot(xaxn[[2]], drop_units(xs), axes = F, xlab = "", type = "l", xaxs = 'i', 
 			ylab = nylab, log = 'y')
@@ -191,16 +191,6 @@ lhov <- function(x, by = 'sample', nbins = "pretty", norm = TRUE, legend = TRUE,
 		xrst <- t(as.raster(.map2color(seq(min(xm, na.rm = T), max(xm, na.rm = T), length.out = length(col)), col)))
 		rasterImage(xrst, xleft = min(xm, na.rm = T), ybottom = 0, xright = max(xm, na.rm = T), ytop = 1, interpolate = T)
 	}
-
-
-# If not per sample, aggregate to create a regular serires.
-#	if(by != 'sample') {
-#		by <- x[, .cap(by)]
-# 		For pretty bins...
-# 		range(by) / length(x)
-#		seq(by[1], by[length(by)], length.out = nbins)
-#		if less than 5 days, if less than 5 hours, per 5 min, if less tha 5 min, per 5 seconds.
-#	}
 }
 
 

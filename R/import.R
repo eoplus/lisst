@@ -198,7 +198,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 
 	# Check that zscat is necessary and if exists:
 	if(missing(zscat)) {
-		if(out == 'cor' || out == 'cal' || out == 'vsf')
+		if((out == 'cor' || out == 'cal' || out == 'vsf') && linst$mod == '100')
 			stop("zscat must be provided for out 'cor', 'cal' or ", 
 				"'vsf'", call. = FALSE)
 		else
@@ -270,8 +270,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 
 	rownames(lo) <- format(ti, "%Y-%m-%d %H:%M:%OS1 %Z")
 	lo <- lget(lo, out)
-	lo <- lo[, -which(colnames(lo) %in% c("Time1", "Time2", "Year", 	# Remove the original time columns
-		"Month", "Day", "Hour", "Minute", "Second"))]
+	lo <- lo[, -which(colnames(lo) %in% c("Time1", "Time2", "Year", 	# Remove the original time columns and not used column in LISST-200X
+		"Month", "Day", "Hour", "Minute", "Second", "NU"))]
 
 	# Apply simple quality check:
 	if(mode == 'binary' & is.null(zscat)) trant <- FALSE
@@ -346,6 +346,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 #
 # Read a LISST binary file for the registered instruments of supported models. 
 # It is not intended to be used directly, but called from \code{read_lisst}.
+#
+# Those are based on the Matlab functions provided by Sequoia.
 
 .lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
 	lmodl$pl <- pl
@@ -390,8 +392,55 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		return(lo)
 	}
 
-	if(ancd$mod == "200") {
-		cat("To be added soon...")
+	if(lmodl$mod == "200") {
+		RecordSize <- 120						# 120 bytes per record
+		num16 = (RecordSize / 2) - 1
+		num32 = floor((RecordSize - 2) / 4)
+
+		fid  <- file(fl, "rb")
+		seek(fid, (8 * RecordSize) + 2, 'start')
+		zsc <- readBin(fid, "integer", n = num16, size = 2, signed = FALSE, endian = "big")
+		seek(fid, (9 * RecordSize) + 2, 'start')
+		lo <- readBin(fid, "integer", n = file.info(fl)$size - seek(fid), size = 2, signed = FALSE, endian = "big")
+		lo <- matrix(c(lo, 56026), ncol = 60, byrow = T)[, -60]
+		close(fid)
+
+		lo[lo > 40950] <- lo[lo > 40950] - 65536			# Check this, why? and why 65536 instead of 65535?
+		zsc[zsc > 40950] <- zsc[zsc > 40950] - 65536
+		lo[, 1:lmodl$nring] <- lo[, 1:lmodl$nring] / 10 
+		zsc[1:lmodl$nring] <- zsc[1:lmodl$nring] / 10
+
+		zscatd <- rep(as.numeric(NA), lmodl$bnvar)
+		if(!(missing(zscat) || is.null(zscat))) {
+			if(is.lisst(zscat)) {
+				if(nrow(zscat) > 1)
+					stop("A lisst object used as zscat ", 
+					"must have a single row. Use lstat for", 
+					" aggregation.", call. = FALSE)
+				zscatd <- drop_lisst(lget(zscat, 'raw'))
+			} else if(file.exists(zscat)) {
+				zscatd <- as.numeric(read.table(zscat)[, 1])
+			}
+		} else {
+			zscatd <- zsc
+		}
+		zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
+		names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
+
+		lo <- as.data.frame(lo)
+		colnames(lo) <- lmodl$lvarn[1:lmodl$bnvar]
+		id <- setdiff(lmodl$lvarn[1:lmodl$bnvar], c("Time1", "Time2", 
+			"Year", "Month", "Day", "Hour", "Minute", "Second"))
+		id <- which(lmodl$lvarn %in% id)
+		for(i in id) {
+			units(lo[, i]) <- 1
+			units(zscatd[, i]) <- 1
+		}
+
+		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), 
+			linst = linst, lmodl = lmodl, zscat = zscatd, 
+			class = c("lisst", "data.frame"))
+		return(lo)
 	}
 }
 

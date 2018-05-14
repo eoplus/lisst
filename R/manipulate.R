@@ -265,7 +265,7 @@ lgetcor <- function(x) {
 			zscat[, "TLaser"] / x[, "RLaser"]
 		tau[drop_units(tau) <= 0] <- set_units(as.numeric(NA), 1)
 
-		for(i in 1:lmodl$nring) {
+		for(i in 1:lmodl$nring) {					# Serious performance issue with the loop. Try to remove it...
 			x[, i] <- x[, i] / tau - (zscat[, i] * x[, "RLaser"] / 
 				zscat[, "RLaser"])
 			x[, i] <- x[, i] / wext
@@ -279,6 +279,11 @@ lgetcor <- function(x) {
 		x[, "RLaser"]      <- (x[, "RLaser"]      - linst$lrefcc[2]) / linst$lrefcc[1]
 		x[, "Depth"]       <- (x[, "Depth"]       - linst$dpthcc[2]) / linst$dpthcc[1]
 		x[, "Temperature"] <- (x[, "Temperature"] - linst$tempcc[2]) / linst$tempcc[1]
+		if(lmodl$mod == '200') {
+			x[, "ExtI2"]       <- (x[, "ExtI2"]       - linst$extrcc[2]) + linst$extrcc[1]
+			x[, "MeanD"]       <- (x[, "MeanD"]       - linst$sauter[2]) + linst$sauter[1]
+			x[, "TotVolConc"]  <- (x[, "TotVolConc"]  - linst$totvol[2]) + linst$totvol[1]
+		}
 		for(i in 1:lmodl$nring) x[, i] <- x[, i] / linst$ringcc
 		x <- x[, -which(names(x) == "OptTrans"), drop = FALSE]
 		x <- x[, -which(names(x) == "BeamAtt"), drop = FALSE]
@@ -337,6 +342,11 @@ lgetcal <- function(x) {
 		x[, "Temperature"] <- x[, "Temperature"] * linst$tempcc[1] + linst$tempcc[2]
 		x[, "OptTrans"]    <- tau
 		x[, "BeamAtt"]     <- set_units(drop_units(-log(tau) / lmodl$pl), '1/m')
+		if(lmodl$mod == '200') {
+			x[, "ExtI2"]       <- x[, "ExtI2"]       * linst$extrcc[1] + linst$extrcc[2]
+			x[, "MeanD"]       <- x[, "MeanD"]       * linst$sauter[1] + linst$sauter[2]
+			x[, "TotVolConc"]  <- x[, "TotVolConc"]  * linst$totvol[1] + linst$totvol[2]
+		}
 		for(i in 1:lmodl$nring) x[, i] <- set_units(x[, i] * linst$ringcc, 'µW')
 
 	} else {
@@ -394,6 +404,7 @@ lgetvsf <- function(x) {
 	lmodl <- attr(x, "lmodl")
 	zscat <- attr(x, "zscat")
 
+	if(lmodl$mod == '200') stop('VSF retrieval for LISST-200X is not implemented', call. = FALSE)
 	wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
 
 	for(i in 1:lmodl$nring) {

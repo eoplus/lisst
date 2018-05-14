@@ -29,13 +29,18 @@ lisst_reg <- function(model, path) {
 	if(nargs() < 2)
 		stop("lisst_reg has no defaults; all arguments must be specifyed", call. = FALSE)
 
-	model <- sub("x", "", as.character(model))
+	model <- sub("x", "", as.character(model), ignore.case = T)
 	
 	if(length(.LISSTm[[model]]) < 1)
 		stop(paste("Model", model, "not supported. Supported models:", 
 			paste(names(.LISSTm), collapse = ", ")), call. = FALSE)
-	if(!dir.exists(path))
-		stop(paste("Directory", path, "not found"), call. = FALSE)
+	if(model == '200') {
+		if(!file.exists(path))
+			stop(paste("File", path, "not found"), call. = FALSE)
+	} else {
+		if(!dir.exists(path))
+			stop(paste("Directory", path, "not found"), call. = FALSE)
+	}
 
 	if(model == "100") {
 		fls <- list.files(path, pattern = "", full.names = TRUE)
@@ -70,10 +75,11 @@ lisst_reg <- function(model, path) {
 			hk[i+1, ] <- as.numeric(sapply(strsplit(ini[id[3:4]], "="), '[[', 2))
 		}
 		hkn <- rownames(hk)
+		sn  <- dat[, 1]							# To keep same way for LISST-200X
 
 		.LISSTi[[as.character(dat[1])]] <- list(
 			mod = model,
-			sn  = dat[, 1],
+			sn  = sn,
 			dty = as.character(dat[, 2]),
 			X   = dat[, 5] == "X",
 			fzscat = zsc,
@@ -87,17 +93,63 @@ lisst_reg <- function(model, path) {
 			dpthcc = set_units(hk[grep("Depth", hkn), ], 'm'),
 			tempcc = set_units(hk[grep("Temperature", hkn), ], '°C')
 		)
-
-		save(".LISSTi", file = file.path(find.package("lisst"), "R", "sysdata.rda"))
-		unlockBinding(".LISSTi", environment(lisst::lisst_reg))
-		assign(".LISSTi", .LISSTi, envir = environment(lisst::lisst_reg))
-		if(.LISSTi[[as.character(dat[1])]]$X) model <- paste0(model, "X")
-		cat("\n")
-		cat(paste0("LISST-", model), paste0("SN:", dat[1]), "successfully registered\n\n")
 	}
 	if(model == "200") {
-		cat("To be added soon...")
+		RecordSize <- 120						# 120 bytes per record
+		num16 = (RecordSize / 2) - 1
+		num32 = floor((RecordSize - 2) / 4)
+
+		fid  <- file(path, "rb")
+		name <- readChar(fid, nchars = 20)
+		sn   <- readBin(fid, "integer", n = 1, size = 2, signed = FALSE, endian = "big")
+		seek(fid, 2, 'current')
+		vcc   <- readBin(fid, "integer", n = 1, size = 4, endian = "big")
+		seek(fid, RecordSize + 2, 'start')
+		rig <- readBin(fid, "integer", n = num16, size = 2, signed = FALSE, endian = "big")
+		rig <- rig[2:37] / rig[1]
+#		seek(fid, (2 * RecordSize) + 2, 'start')
+#		tv <- readBin(fid, "double", n = num32, size = 4, endian = "big")
+#		seek(fid, (3 * RecordSize) + 2, 'start')
+#		tv <- c(tv , readBin(fid, "double", n = 7, size = 4, endian = "big"))
+#		seek(fid, (4 * RecordSize) + 2, 'start')
+#		ta <- readBin(fid, "double", n = num32, size = 4, endian = "big")
+#		seek(fid, (5 * RecordSize) + 2, 'start')
+#		ta <- c(ta , readBin(fid, "double", n = 7, size = 4, endian = "big"))
+		seek(fid, (6 * RecordSize) + 2, 'start')
+		hk <- readBin(fid, "double", n = num32, size = 4, endian = "big")
+		seek(fid, (7 * RecordSize) + 2, 'start')
+		zsc <- readBin(fid, "integer", n = num16, size = 2, signed = FALSE, endian = "big")
+		close(fid)
+		zsc[zsc > 40950] <- zsc[zsc > 40950] - 65536			# Check this...
+		zsc <- zsc / 10
+
+		.LISSTi[[as.character(sn)]] <- list(
+			mod = model,
+			sn  = sn,
+			dty = 'A',
+			X   = TRUE,
+			fzscat = zsc,
+			ringcf = set_units(rig, 1),
+			ringcc = set_units(hk[9], 'W'),				# Check with Sequoia! Seems to high...
+			volcc  = vcc,
+			lpowcc = set_units(c(hk[17], 0), 'mW'),
+			battcc = set_units(c(0.01, 0), 'V'),
+			extrcc = set_units(c(0.0001, 0), 'V'),
+			lrefcc = set_units(c(hk[16], 0), 'mW'),
+			dpthcc = set_units(hk[c(3, 4)], 'm'),
+			tempcc = set_units(hk[c(12, 13)], '°C'),
+			sauter = set_units(c(hk[15], 0), 'µm'),
+			totvol = set_units(c(hk[14], 0), 'ppm')
+		)
 	}
+
+	save(".LISSTi", file = file.path(find.package("lisst"), "R", "sysdata.rda"))
+	unlockBinding(".LISSTi", environment(lisst::lisst_reg))
+	assign(".LISSTi", .LISSTi, envir = environment(lisst::lisst_reg))
+	lockBinding(".LISSTi", environment(lisst::lisst_reg))
+	if(.LISSTi[[as.character(sn)]]$X) model <- paste0(model, "X")
+	cat("\n")
+	cat(paste0("LISST-", model), paste0("SN:", sn), "successfully registered\n\n")
 }
 
 #'
@@ -136,14 +188,14 @@ lisst_reg <- function(model, path) {
 .LISSTm <- list(
 	"100"  = list(
 		mod   = "100",
-		pl    = set_units(0.05, m), 
+		pl    = set_units(0.05, 'm'), 
 		bnvar = 40, 
 		anvar = 42, 
 		nring = 32, 
-		a0 = set_units(c(B = 0.1, C = 0.05) * pi / 180, rad),
+		a0 = set_units(c(B = 0.1, C = 0.05) * pi / 180, 'rad'),
 		s0 = list(
-			B = set_units(c(ss = 1.25, rs = 1.0), µm), 
-			C = set_units(c(ss = 2.50, rs = 1.9), µm)
+			B = set_units(c(ss = 1.25, rs = 1.0), 'µm'), 
+			C = set_units(c(ss = 2.50, rs = 1.9), 'µm')
 		),
 		lvarn = c(paste("Bin", formatC(1:32, width = 2, flag = 0), sep = "_"),"TLaser","Battery","ExtI1","RLaser","Depth","Temperature","Time1","Time2","OptTrans","BeamAtt"),
 		varun = c(rep("ppm", 32), "mW", "V", "V", "mW", "m", "`°C`", "1", "1", "1", "1/m"),
@@ -188,15 +240,15 @@ lisst_reg <- function(model, path) {
 	), 
 	"200"  = list(
 		mod   = "200",
-		pl    = set_units(0.025, m), 
+		pl    = set_units(0.025, 'm'), 
 		bnvar = 59, 
 		anvar = 61, 
 		nring = 36, 
-		a0 = set_units(c(A = NA) * pi / 180, rad),
+		a0 = set_units(c(A = NA) * pi / 180, 'rad'),
 		s0 = list(
-			A = set_units(c(ss = 1.00, rs = 1.00), µm)
+			A = set_units(c(ss = 1.00, rs = 1.00), 'µm')
 		),
-		lvarn = c(paste("Bin", formatC(1:36, width = 2, flag = 0), sep = "_"),"TLaser","Battery","ExtI1","RLaser","Depth","Temperature","Year","Month","Day","Hour","Minute","Second","ExtI2","Mean Diameter","Total Volume Concentration","Relative Humidity", "Accelerometer X", "Accelerometer Y", "Accelerometer Z", "Raw pressure 1","Raw pressure 2","Ambient Light", "NU", "OptTrans","BeamAtt"),
+		lvarn = c(paste("Bin", formatC(1:36, width = 2, flag = 0), sep = "_"),"TLaser","Battery","ExtI1","RLaser","Depth","Temperature","Year","Month","Day","Hour","Minute","Second","ExtI2","MeanD","TotVolConc","RelH", "AccX", "AccY", "AccZ", "RawP1","RawP2","EnvLight", "NU", "OptTrans","BeamAtt"),
 		varun = c(rep("ppm", 36), "mW", "V", "V", "mW", "m", "`°C`", "1", "1", "1", "hr", "min", "s", "V", "µm", "ppm", "`%`", "1", "1", "1", "1", "1", "1", "1", "1", "1/m"),
 		wang = list(
 			A = NULL
@@ -227,4 +279,29 @@ lisst_reg <- function(model, path) {
 # .LISSTi <- list()
 #
 # save(.LISSTm, .LISSTi, file = system.file("R", "sysdata.rda", package = "lisst"))
+
+#' Retrieve a list of registered instruments
+#'
+#' The function provide a character vector of the installed instruments 
+#' contaning model and serial number.
+#'
+#' @return A character vector.
+#'
+#' @export
+
+linst <- function() {
+	lmd <- character(length(.LISSTi))
+	lsn <- character(length(.LISSTi))
+	for(i in 1:length(.LISSTi)) {
+		lmd[i] <- .LISSTi[[i]]$mod
+		if(.LISSTi[[i]]$X) lmd[i] <- paste0(lmd[i], "X")
+		lsn[i]  <- .LISSTi[[i]]$sn
+	}
+
+	lp  <- cbind(lmd, lsn)
+	lp  <- lp[order(lp[, 1], lp[, 2]), ]
+	for(i in 1:length(.LISSTi)) 
+		lsn[i] <- paste0("LISST-", lp[i, 1], " SN:", lp[i, 2])
+	as.matrix(lsn)
+}
 

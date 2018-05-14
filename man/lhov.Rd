@@ -4,18 +4,14 @@
 \alias{lhov}
 \title{Hovmöller diagram for lisst objects}
 \usage{
-lhov(x, by = "sample", nbins = "pretty", norm = TRUE, legend = TRUE,
-  total = TRUE, col, xlab, ylab, zlab, yu, zu)
+lhov(x, by = "sample", norm = TRUE, legend = TRUE, total = TRUE, col,
+  xlab, ylab, zlab, yu, zu)
 }
 \arguments{
 \item{x}{A lisst object.}
 
 \item{by}{Ordinate axis dimension. Must be one of 'sample', 'time' or 
 'depth'.}
-
-\item{nbins}{If the lisst object is not regular in the dimension specified 
-parameter by, nbins controls the binning of the data to achieve 
-a regular series appropriate for raster representation.}
 
 \item{norm}{Logic. Should the magnitude values de normalized? See details.}
 
