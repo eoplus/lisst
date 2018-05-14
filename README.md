@@ -11,17 +11,18 @@ remotes::install_github("AlexCast/lisst")
 ```
 
 ### Provided functionality:
-- Subseting by sample index, depth or time;
+- Subseting by sample, depth or time;
 - Particle VSF retrieval from binary file;
 - Particle number concentraton (1/L/µm) from ppm volume;
-- PSD model fitting; 
+- PSD model fitting;
+- Hovmöller diagram plotting per sample, depth or time;
 - Diverse plot utilities; (in development...)
 - Automatic data quality control; (in development...)
 - Automatic units conversion with the [units](https://github.com/r-quantities/units) package;
 
 ### Instrument models suported:
-- LISST-100(X)
-- LISST-200X (in development...)
+- LISST-100(X);
+- LISST-200X.
 
 ### Note:
 As the curent verion, is not yet possible to invert directly the raw binary data from LISST into particle size distribution (PSD) since the courtesy proprietary code provided by the manufacturer for the inversion is a source code in MATLAB P-code format, that can only be read by MATLAB (MathWorks, Inc).
