@@ -265,13 +265,13 @@ lgetcor <- function(x) {
 			zscat[, "TLaser"] / x[, "RLaser"]
 		tau[drop_units(tau) <= 0] <- set_units(as.numeric(NA), 1)
 
-		for(i in 1:lmodl$nring) {					# Serious performance issue with the loop. Try to remove it...
-			x[, i] <- x[, i] / tau - (zscat[, i] * x[, "RLaser"] / 
-				zscat[, "RLaser"])
-			x[, i] <- x[, i] / wext
-			x[, i] <- x[, i] * linst$ringcf[i]
-			x[, i][drop_units(x[, i]) < 0] <- 0
-		}
+		xm   <- as.matrix(x[, 1:lmodl$nring])
+		bckg <- as.matrix(zscat[, 1:lmodl$nring])[rep(1, nrow(x)),] * x[, "RLaser"] / zscat[, "RLaser"]
+		xm   <- ((xm / tau) - bckg) / wext
+		xm   <- xm * t(as.matrix(linst$ringcf))[rep(1, nrow(x)),]
+		xm[xm < set_units(0, 1)] <- 0
+		x[, 1:lmodl$nring] <- xm
+
 	} else {
 		x[, "TLaser"]      <- (x[, "TLaser"]      - linst$lpowcc[2]) / linst$lpowcc[1]
 		x[, "Battery"]     <- (x[, "Battery"]     - linst$battcc[2]) / linst$battcc[1]

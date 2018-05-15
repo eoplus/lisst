@@ -148,12 +148,15 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	if(!file.exists(fl))
 		stop(paste("File", fl, "not found"), call. = FALSE)
 
+	# Find if file is processed or binary by extension:
 	mode <- "processed"
-	if(length(grep('.(\\.asc|\\.csv)', fl, perl = TRUE)) < 1)		# Find if file is processed or binary by extension
+	if(length(grep('.(\\.asc|\\.csv)', fl, perl = TRUE)) < 1)
 		mode <- "binary"
 
-	if(missing(out) && mode == "processed") out <- "vol"			# Default output for processed files
-	if(missing(out) && mode == "binary")    out <- "vsf"			# Default output for binary files
+	# If missing, specify output type:
+	if(missing(out) && mode == "processed") out <- "vol"
+	if(missing(out) && mode == "binary")    out <- "vsf"
+
 	if(mode == "processed" && !(out == "vol" || out == "pnc"))
 		stop("out for LISST SOP processed files must be 'vol' or 'pnc'", 
 			call. = FALSE)
@@ -161,7 +164,19 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		stop("out for binary LISST files must be 'raw', 'cor','cal' or", 
 			" vsf", call. = FALSE)
 
-	# Retrieve information on model, either from sn or model parameters:
+	# Retrieve information on model, either from sn or model parameters. 
+	# Special handling is provided for LISST-200X, since is a single detector
+	# type and has metadata in the binary file, it requires less input form 
+	# user.
+	if(length(grep('.(\\.RBN|\\.csv)', fl, perl = TRUE)) > 0) model <- '200'
+	if(length(grep('\\.RBN', fl, perl = TRUE)) > 0) {
+		fid  <- file(fl, "rb")
+		seek(fid, 20, 'start')
+		sn   <- readBin(fid, "integer", n = 1, size = 2, signed = FALSE, 
+				endian = "big")
+		close(fid)
+	}
+	
 	if(missing(sn)) {
 		if(out == "cor" || out == "cal" || out == 'vsf')
 			stop("Processing of binary to 'cor', 'cal' or 'vsf' ",
@@ -174,8 +189,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 				" sn is not", call. = FALSE)
 
 		linst <- list(X = FALSE)
-		if(length(grep("X", model)) > 0) linst$X <- TRUE
-		model <- sub("X", "", model)
+		if(length(grep("X", model, ignore.case = TRUE)) > 0) linst$X <- TRUE
+		model <- sub("X", "", model, ignore.case = TRUE)
 		linst$mod <- model
 		lmodl <- switch(model,
 			"200"  = .getmodp(list(mod = "200", dty = "A")),
@@ -189,14 +204,20 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	} else {
 		sn <- as.character(sn)
 		linst <- .LISSTi[[sn]]
-		if(is.null(linst))
-			stop("Instrument not registered. See ?lisst_reg", 
-				call. = FALSE)
+		if(is.null(linst)) {
+			if(length(grep('\\.RBN', fl, perl = TRUE)) > 0) {
+				lisst_reg('200X', fl)
+				linst <- .LISSTi[[sn]]
+			} else {
+				stop("Instrument not registered. See ?lisst_reg", 
+					call. = FALSE)
+			}
+		}
 		lmodl <- .getmodp(linst)
 		model <- NULL
 	}
 
-	# Check that zscat is necessary and if exists:
+	# Check that external zscat is necessary and if exists:
 	if(missing(zscat)) {
 		if((out == 'cor' || out == 'cal' || out == 'vsf') && linst$mod == '100')
 			stop("zscat must be provided for out 'cor', 'cal' or ", 
@@ -206,11 +227,11 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	} else if(is.character(zscat)) {
 		if(!file.exists(zscat)) {
 			if(out == 'cor' || out == 'cal' || out == 'vsf')
-				stop(paste("File", zscat, "not found"), 
+				stop(paste("zscat file", zscat, "not found"), 
 					call. = FALSE)
 			else {
 				zscat <- NULL
-				warning(paste("File", zscat, "not found; zscat", 
+				warning(paste("zscat file", zscat, "not found; zscat", 
 					" data will not be added to lisst ", 
 					"object"), call. = FALSE)
 			}
@@ -218,14 +239,16 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	}
 
 	# lmodl$pl is not set directly here from pl parameter because .lisst_pro
-	# will need to compensate the beam attenuation (and the volume 
-	# concentration) with a factor based on the standard pl of the model:
+	# will need to compensate the beam attenuation and the volume 
+	# concentration with a factor based on the standard pl of the model:
 	if(missing(pl)) {
-		warning(paste("pl not provided - assuming standard path length"), 
+		warning(paste0("pl not provided - assuming standard path ", 
+			"length (",  drop_units(lmodl$pl), " m)"), 
 			call. = FALSE)
 		pl <- lmodl$pl
 	} else if(pl > drop_units(lmodl$pl)) {
-		stop(paste0("Path length in LISST-", linst$mod, " cannot be ", 
+		mod <- ifelse(linst$X, paste0(linst$mod, 'X'), linst$mod)
+		stop(paste0("Path length in LISST-", mod, " cannot be ", 
 			"larger than ", drop_units(lmodl$pl), " m"), 
 			call. = FALSE)
 	}
@@ -241,7 +264,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		guess <- TRUE
 	}
 
-	# Call specific import functions:
+	# Call specific read functions:
 	if(mode == "binary") {
 		if(lmodl$mod == "100" && grep('.\\.DAT', fl, perl = TRUE) < 1)
 			stop("LISST-100(X) binary files must have a .DAT ", 
@@ -249,7 +272,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		if(lmodl$mod == "200" && grep('.\\.RBN', fl, perl = TRUE) < 1)
 			stop("LISST-200X binary files must have a .RBN ", 
 				"extension", call. = FALSE)
-		lo <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, 
+		x <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, 
 			linst = linst, lmodl = lmodl)
 	} else {
 		if(lmodl$mod == "100" && grep('.\\.asc', fl, perl = TRUE) < 1)
@@ -258,33 +281,33 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		if(lmodl$mod == "200" && grep('.\\.csv', fl, perl = TRUE) < 1)
 			stop("LISST-200X processed files must have a .csv ", 
 				"extension", call. = FALSE)
-		lo <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, 
+		x <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, 
 			linst = linst, lmodl = lmodl)
 	}
 
 	# Get time reference:
-	ti <- .lgdate(lo, yr, tz, guess)
+	ti <- .lgdate(x, yr, tz, guess)
 	tr <- as.numeric(difftime(max(ti), min(ti), units = "sec"))
-	ti <- rep(ti[1], nrow(lo)) + 						# Add precision to avoid duplicate rownames
-		cumsum(c(0, rep(tr / (nrow(lo) - 1), nrow(lo) - 1)))
+	ti <- rep(ti[1], nrow(x)) + 						# Add precision to avoid duplicate rownames
+		cumsum(c(0, rep(tr / (nrow(x) - 1), nrow(x) - 1)))
 
-	rownames(lo) <- format(ti, "%Y-%m-%d %H:%M:%OS1 %Z")
-	lo <- lget(lo, out)
-	lo <- lo[, -which(colnames(lo) %in% c("Time1", "Time2", "Year", 	# Remove the original time columns and not used column in LISST-200X
-		"Month", "Day", "Hour", "Minute", "Second", "NU"))]
+	rownames(x) <- format(ti, "%Y-%m-%d %H:%M:%OS1 %Z")
+	x <- lget(x, out)
+#	x <- x[, -which(colnames(x) %in% c("Time1", "Time2", "Year", 		# Remove the original time columns and not used column in LISST-200X
+#		"Month", "Day", "Hour", "Minute", "Second", "NU"))]
 
 	# Apply simple quality check:
 	if(mode == 'binary' & is.null(zscat)) trant <- FALSE
 	if(trant) {
 		if(out == 'raw' | out == 'cor')
-			ot <- lget(lo, 'cal')[, "OptTrans"]
+			ot <- lget(x, 'cal')[, "OptTrans"]
 		else
-			ot <- lo[, "OptTrans"]
+			ot <- x[, "OptTrans"]
 		id  <- which(drop_units(ot) < 0.3)
-		for(i in id) lo[i, 1:attr(lo, 'lmodl')$nring] <- NA
+		for(i in id) x[i, 1:attr(x, 'lmodl')$nring] <- NA
 	}
 
-	return(lo)
+	return(x)
 }
 
 # Read a LISST processed file
@@ -295,21 +318,19 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 
 .lisst_pro <- function(fl, sn, pl, zscat, linst, lmodl) {
 
-	if(lmodl$mod == "100") {
-                if(length(grep("_rs", fl)) > 0) ity <- "rs"
-		else ity <- "ss"
-		lo <- read.table(fl, header = FALSE)
-	}
-	if(lmodl$mod == "200") {
-                if(length(grep("_rs", fl)) > 0) ity <- "rs"
-		else ity <- "ss"		
-		lo <- read.csv(fl, header = FALSE)
-	}
-	lo <- as.data.frame(lo)
-	colnames(lo) <- lmodl$lvarn
+        if(length(grep("_rs", fl)) > 0) ity <- "rs"
+	else ity <- "ss"
+
+	if(lmodl$mod == "100")
+		x <- read.table(fl, header = FALSE)
+	if(lmodl$mod == "200")		
+		x <- read.csv(fl, header = FALSE)
+
+	colnames(x) <- lmodl$lvarn
 	mfact <- drop_units(lmodl$pl / pl)					# PRM correction factor
-	for(i in 1:lmodl$nring) lo[, i] <- lo[, i] * mfact			# PRM correction for volume concentration
-	lo[, "BeamAtt"] <- lo[, "BeamAtt"] * mfact				# PRM correction for beam attenuation
+#	for(i in 1:lmodl$nring) x[, i] <- x[, i] * mfact			# PRM correction for volume concentration
+	x[, 1:lmodl$nring] <- x[, 1:lmodl$nring] * mfact
+	x[, "BeamAtt"] <- x[, "BeamAtt"] * mfact				# PRM correction for beam attenuation
 	lmodl$pl <- pl								# Store the true path length in object metadata
 
 	# Process background data:
@@ -332,14 +353,13 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		"Hour", "Minute", "Second"))
 	id <- which(lmodl$lvarn %in% id)
 	for(i in id) {
-		units(lo[, i]) <- lmodl$varun[i]
+		units(x[, i]) <- lmodl$varun[i]
 		if(i < lmodl$bnvar) units(zscatd[, i]) <- 1
 	}
 
-	lo <- structure(lo, type = 'vol', lproc = list(ity = ity), 
+	structure(x, type = 'vol', lproc = list(ity = ity), 
 		linst = linst, lmodl = lmodl, zscat = zscatd, 
 		class = c("lisst", "data.frame"))
-	return(lo)
 }
 
 # Read a LISST binary file
@@ -351,97 +371,75 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 
 .lisst_bin <- function(fl, sn, pl, zscat, linst, lmodl) {
 	lmodl$pl <- pl
+
 	if(lmodl$mod == "100") {
-		lo <- readBin(fl, "integer", n = file.info(fl)$size, size = 1, 
+		x <- readBin(fl, "integer", n = file.info(fl)$size, size = 1, 
 			signed = FALSE, endian = "little")
-		lo <- lo[seq(1, length(lo), 2)] * 256 + lo[seq(2,length(lo), 2)]
-		nrows <- floor(length(lo) / lmodl$bnvar)
-		lo <- lo[1:(nrows * lmodl$bnvar)]
-		lo <- matrix(lo, nrow = nrows, byrow = TRUE)
-		if(linst$X) {
-			lo[, 1:32] <- lo[, 1:32] / 10
-		}
+		x <- x[seq(1, length(x), 2)] * 256 + x[seq(2,length(x), 2)]
+		nrows <- floor(length(x) / lmodl$bnvar)
+		x <- x[1:(nrows * lmodl$bnvar)]
+		x <- matrix(x, nrow = nrows, byrow = TRUE)
+		if(linst$X) x[, 1:32] <- x[, 1:32] / 10
 
-		zscatd <- rep(as.numeric(NA), lmodl$bnvar)
-		if(!(missing(zscat) || is.null(zscat)))
-			if(is.lisst(zscat)) {
-				if(nrow(zscat) > 1)
-					stop("A lisst object used as zscat ", 
-					"must have a single row. Use lstat for", 
-					" aggregation.", call. = FALSE)
-				zscatd <- drop_lisst(lget(zscat, 'raw'))
-			} else if(file.exists(zscat)) {
-				zscatd <- as.numeric(read.table(zscat)[, 1])
-			}
-		zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
-		names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
-
-		lo <- as.data.frame(lo)
-		colnames(lo) <- lmodl$lvarn[1:lmodl$bnvar]
+		x <- as.data.frame(x)
+		colnames(x) <- lmodl$lvarn[1:lmodl$bnvar]
 		id <- setdiff(lmodl$lvarn[1:lmodl$bnvar], c("Time1", "Time2", 
 			"Year", "Month", "Day", "Hour", "Minute", "Second"))
 		id <- which(lmodl$lvarn %in% id)
-		for(i in id) {
-			units(lo[, i]) <- 1
-			units(zscatd[, i]) <- 1
-		}
-
-		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), 
-			linst = linst, lmodl = lmodl, zscat = zscatd, 
-			class = c("lisst", "data.frame"))
-		return(lo)
 	}
 
 	if(lmodl$mod == "200") {
-		RecordSize <- 120						# 120 bytes per record
-		num16 = (RecordSize / 2) - 1
-		num32 = floor((RecordSize - 2) / 4)
+		blksz <- 120							# Block size: 120 bytes
+		num16 = (blksz / 2) - 1
+		num32 = floor((blksz - 2) / 4)
 
 		fid  <- file(fl, "rb")
-		seek(fid, (8 * RecordSize) + 2, 'start')
-		zsc <- readBin(fid, "integer", n = num16, size = 2, signed = FALSE, endian = "big")
-		seek(fid, (9 * RecordSize) + 2, 'start')
-		lo <- readBin(fid, "integer", n = file.info(fl)$size - seek(fid), size = 2, signed = FALSE, endian = "big")
-		lo <- matrix(c(lo, 56026), ncol = 60, byrow = T)[, -60]
+		seek(fid, (8 * blksz) + 2, 'start')
+		zsc <- readBin(fid, "integer", n = num16, size = 2, 
+			signed = FALSE, endian = "big")
+		seek(fid, (9 * blksz) + 2, 'start')
+		x <- readBin(fid, "integer", n = file.info(fl)$size - seek(fid), 
+			signed = FALSE, size = 2, endian = "big")
+		x <- matrix(c(x, NA), ncol = 60, byrow = T)[, -60]
 		close(fid)
 
-		lo[lo > 40950] <- lo[lo > 40950] - 65536			# Check this, why? and why 65536 instead of 65535?
+		x[x > 40950] <- x[x > 40950] - 65536
 		zsc[zsc > 40950] <- zsc[zsc > 40950] - 65536
-		lo[, 1:lmodl$nring] <- lo[, 1:lmodl$nring] / 10 
+		x[, 1:lmodl$nring] <- x[, 1:lmodl$nring] / 10 
 		zsc[1:lmodl$nring] <- zsc[1:lmodl$nring] / 10
 
-		zscatd <- rep(as.numeric(NA), lmodl$bnvar)
-		if(!(missing(zscat) || is.null(zscat))) {
-			if(is.lisst(zscat)) {
-				if(nrow(zscat) > 1)
-					stop("A lisst object used as zscat ", 
-					"must have a single row. Use lstat for", 
-					" aggregation.", call. = FALSE)
-				zscatd <- drop_lisst(lget(zscat, 'raw'))
-			} else if(file.exists(zscat)) {
-				zscatd <- as.numeric(read.table(zscat)[, 1])
-			}
-		} else {
-			zscatd <- zsc
-		}
-		zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
-		names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
-
-		lo <- as.data.frame(lo)
-		colnames(lo) <- lmodl$lvarn[1:lmodl$bnvar]
+		x <- as.data.frame(x)
+		colnames(x) <- lmodl$lvarn[1:lmodl$bnvar]
 		id <- setdiff(lmodl$lvarn[1:lmodl$bnvar], c("Time1", "Time2", 
 			"Year", "Month", "Day", "Hour", "Minute", "Second"))
 		id <- which(lmodl$lvarn %in% id)
-		for(i in id) {
-			units(lo[, i]) <- 1
-			units(zscatd[, i]) <- 1
-		}
-
-		lo <- structure(lo, type = 'raw', lproc = list(ity = NA), 
-			linst = linst, lmodl = lmodl, zscat = zscatd, 
-			class = c("lisst", "data.frame"))
-		return(lo)
 	}
+
+	# Get zscat:
+	zscatd <- rep(as.numeric(NA), lmodl$bnvar)
+	if(!(missing(zscat) || is.null(zscat))) {
+		if(is.lisst(zscat)) {
+			if(nrow(zscat) > 1)
+				stop("A lisst object used as zscat must have a",
+				" single row. Use lstat for aggregation.", 
+				call. = FALSE)
+			zscatd <- drop_lisst(lget(zscat, 'raw'))
+		} else if(file.exists(zscat)) {
+			zscatd <- as.numeric(read.table(zscat)[, 1])
+		}
+	} else if(lmodl$mod == "200") {
+		zscatd <- zsc
+	}
+	zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
+	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
+
+	for(i in id) {
+		units(x[, i])      <- 1
+		units(zscatd[, i]) <- 1
+	}
+
+	structure(x, type = 'raw', lproc = list(ity = NA), linst = linst, 
+		lmodl = lmodl, zscat = zscatd, class = c("lisst", "data.frame"))
 }
 
 # Get LISST measurement dates
@@ -451,7 +449,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 # user tz options. It is not intended to be used directly, but called from
 # read_lisst function.
 #
-# param lo    A lisst object.
+# param x    A lisst object.
 # param yr    The year of first measurement in the lisst object. Ignored for 
 #             LISST-200X.
 # param guess Logical. Is the yr passed a guess from read_lisst?
@@ -464,27 +462,27 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 # but the guess date has to be about the last measurement. See the details of 
 # the read_lisst function on how the guess is made.
 
-.lgdate <- function(lo, yr, tz, guess = FALSE) {
-	lmodl <- attr(lo, "lmodl")
-	lo    <- drop_lisst(lo) 
+.lgdate <- function(x, yr, tz, guess = FALSE) {
+	lmodl <- attr(x, "lmodl")
+	x    <- drop_lisst(x) 
 	if(lmodl$mod == "100") {
-		julian <- floor(lo[, 39] / 100)
+		julian <- floor(x[, 39] / 100)
 		id <- which(diff(julian) <= -364)
-        	yr <- rep(yr, nrow(lo))
+        	yr <- rep(yr, nrow(x))
 		if(length(id) > 0) {
 			if(guess) yr <- yr - length(id)
 			for(i in 1:length(id)) {
 				yr[id[i]:length(yr)] <- yr[id[i]:length(yr)] + 1
 			}
 		}
-		hour   <- round(((lo[, 39] / 100) - julian) * 100)
-		min    <- floor(lo[, 40] / 100)
-        	sec    <- round(((lo[, 40] / 100) - min) * 100)
-        	dates  <- as.POSIXct(paste(yr, julian, hour, min, sec, 
+		hour  <- round(((x[, 39] / 100) - julian) * 100)
+		min   <- floor(x[, 40] / 100)
+        	sec   <- round(((x[, 40] / 100) - min) * 100)
+        	dates <- as.POSIXct(paste(yr, julian, hour, min, sec, 
 			sep = "-"), format = "%Y-%j-%H-%M-%S", tz = tz)
 	} else if(lmodl$mod == "200") {
-		dates  <- as.POSIXct(paste(lo[, 43], lo[, 44], lo[, 45], 
-				lo[, 46], lo[, 47], lo[, 48], sep = "-"), 
+		dates <- as.POSIXct(paste(x[, 43], x[, 44], x[, 45], x[, 46],
+				x[, 47], x[, 48], sep = "-"), 
 				format = "%Y-%m-%d-%H-%M-%S", tz = tz)
 	}
 	return(dates)
