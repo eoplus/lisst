@@ -161,8 +161,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		stop("out for LISST SOP processed files must be 'vol' or 'pnc'", 
 			call. = FALSE)
 	if(mode == "binary" && (out == "vol" || out == "pnc"))
-		stop("out for binary LISST files must be 'raw', 'cor','cal' or", 
-			" vsf", call. = FALSE)
+		stop("out for binary LISST files must be 'raw', 'cor', 'cal' or", 
+			" 'vsf'", call. = FALSE)
 
 	# Retrieve information on model, either from sn or model parameters. 
 	# Special handling is provided for LISST-200X, since is a single detector
@@ -180,8 +180,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	if(missing(sn)) {
 		if(out == "cor" || out == "cal" || out == 'vsf')
 			stop("Processing of binary to 'cor', 'cal' or 'vsf' ",
-				"requires instrument specific information. sn ",
-				"of a registered instrument must be provided.", 
+				"requires instrument specific information - sn ",
+				"of a registered instrument must be provided", 
 				call. = FALSE)
 		else if(missing(model))
 			stop("For reading processed files or for 'raw' outputs", 
@@ -230,10 +230,10 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 				stop(paste("zscat file", zscat, "not found"), 
 					call. = FALSE)
 			else {
-				zscat <- NULL
 				warning(paste("zscat file", zscat, "not found; zscat", 
-					" data will not be added to lisst ", 
+					"data will not be added to lisst", 
 					"object"), call. = FALSE)
+				zscat <- NULL
 			}
 		}
 	}
@@ -266,19 +266,19 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 
 	# Call specific read functions:
 	if(mode == "binary") {
-		if(lmodl$mod == "100" && grep('.\\.DAT', fl, perl = TRUE) < 1)
+		if(lmodl$mod == "100" && (length(grep('.\\.DAT', fl, perl = TRUE)) < 1))
 			stop("LISST-100(X) binary files must have a .DAT ", 
 				"extension", call. = FALSE)
-		if(lmodl$mod == "200" && grep('.\\.RBN', fl, perl = TRUE) < 1)
+		if(lmodl$mod == "200" && (length(grep('.\\.RBN', fl, perl = TRUE)) < 1))
 			stop("LISST-200X binary files must have a .RBN ", 
 				"extension", call. = FALSE)
 		x <- .lisst_bin(fl = fl, sn = sn, pl = pl, zscat = zscat, 
 			linst = linst, lmodl = lmodl)
 	} else {
-		if(lmodl$mod == "100" && grep('.\\.asc', fl, perl = TRUE) < 1)
+		if(lmodl$mod == "100" && (length(grep('.\\.asc', fl, perl = TRUE)) < 1))
 			stop("LISST-100(X) processed files must have a .asc ", 
 				"extension", call. = FALSE)
-		if(lmodl$mod == "200" && grep('.\\.csv', fl, perl = TRUE) < 1)
+		if(lmodl$mod == "200" && (length(grep('.\\.csv', fl, perl = TRUE)) < 1))
 			stop("LISST-200X processed files must have a .csv ", 
 				"extension", call. = FALSE)
 		x <- .lisst_pro(fl = fl, sn = sn, pl = pl, zscat = zscat, 
@@ -339,12 +339,15 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		if(is.lisst(zscat)) {
 			if(nrow(zscat) > 1)
 				stop("A lisst object used as zscat must have a", 
-					" single row. Use lstat for ", 
-					"aggregation.", call. = FALSE)
+					" single row - use lstat for ", 
+					"aggregation", call. = FALSE)
 			zscatd <- drop_lisst(lget(zscat, 'raw'))
 		} else if(file.exists(zscat)) {
 			zscatd <- as.numeric(read.table(zscat)[, 1])
 		}
+	if((length(zscatd) == 40 && lmodl$mod == '200') |
+	   (length(zscatd) == 59 && lmodl$mod == '100'))
+		stop("zscat file not compatible with model", call. = FALSE)
 	zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
 	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
@@ -421,7 +424,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		if(is.lisst(zscat)) {
 			if(nrow(zscat) > 1)
 				stop("A lisst object used as zscat must have a",
-				" single row. Use lstat for aggregation.", 
+				" single row - use lstat for aggregation", 
 				call. = FALSE)
 			zscatd <- drop_lisst(lget(zscat, 'raw'))
 		} else if(file.exists(zscat)) {
@@ -430,6 +433,9 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	} else if(lmodl$mod == "200") {
 		zscatd <- zsc
 	}
+	if((length(zscatd) == 40 && lmodl$mod == '200') |
+	   (length(zscatd) == 59 && lmodl$mod == '100'))
+		stop("zscat file not compatible with model", call. = FALSE)
 	zscatd <- as.data.frame(matrix(zscatd, nrow = 1))
 	names(zscatd) <- lmodl$lvarn[1:lmodl$bnvar]
 
