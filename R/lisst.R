@@ -72,7 +72,7 @@ drop_lisst <- function(x) {
 #'
 #' @examples
 #' lbinr(mooring)
-#' lbinr(,'100XC', 'rs')
+#' lbinr('100XC', 'rs')
 #'
 #' @export
 
