@@ -1,6 +1,15 @@
 
 devtools::load_all()
 
+#
+# LISST-200X Mooring:
+
+fl200 <- system.file("extdata", "sp_april_rs.csv", package = "lisst")
+l200p <- read_lisst(fl200)
+mooring <- l200p['2018-04-19 07:30/2018-04-19 14:00', ]
+devtools::use_data(mooring, overwrite = TRUE)
+
+
 model = "100"
 path = "inst/extdata"
 lisst_reg(model, path)

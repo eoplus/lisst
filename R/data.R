@@ -7,3 +7,7 @@
 #' @format A 'vol' lisst object with 41 records.
 #'
 'fprofile'
+
+#' Mooring of LISST-200X
+#'
+'mooring'

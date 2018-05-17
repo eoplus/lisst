@@ -38,6 +38,7 @@
 }
 
 
+
 #' Hovmöller diagram for lisst objects
 #'
 #' Create Hovmöller diagram for lisst objects based on sample number, 
@@ -157,24 +158,31 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 
 	xs <- xm[1, ]
 	for(i in 1:ncol(xm)) xs[i] <- sum(xm[, i], na.rm = T)
+	xs[drop_units(xs) == 0] <- NA
 	if(norm) {
 		xm <- xm / rep(xs, each = nrow(xm))
 	}
 
 	if(total) {
-		par(mar = c(0, 5, 0.5, 1), las = 1)
+		par(mar = c(0, 5.5, 0.5, 1), las = 1)
 		nylab <- units::make_unit_label('Total', x[, 1])
 		plot(xaxn[[2]], drop_units(xs), axes = F, xlab = "", type = "l", xaxs = 'i', 
-			ylab = nylab, log = 'y')
+			ylab = '', log = 'y')
+		mtext(nylab, side = 2, line = 3.5, las = 0, cex = 0.7)
 		axis(2, crt = 90)
 	}
 
-	par(mar = c(5, 5, 2, 1))
+	par(mar = c(5, 5.5, 2, 1))
 	plot(NA, xlim = c(1, ncol(xm) + 1), ylim = c(1, lmodl$nring + 1), bty = "l", xaxs = 'i', 
-		yaxs = 'i', xaxt = 'n', yaxt = 'n', xlab = xlab, ylab = ylab)
+		yaxs = 'i', xaxt = 'n', yaxt = 'n', xlab = xlab, ylab = '')
+	mtext(ylab, side = 2, line = 3.5, las = 0, cex = 0.7)
 	id <- c(seq(1, lmodl$nring, by = 4), lmodl$nring)
 	axis(2, at = id+0.5, labels = round(yaxn[[2]][id], 4))
-	axis(1, at = axTicks(1) + 0.5, labels = xaxn[[2]][axTicks(1)])
+	if(by == 'time') {
+		axis(1, at = axTicks(1) + 0.5, labels = format(xaxn[[2]][axTicks(1)], "%Y-%m-%d\n%H:%M:%S"), padj = 0.5)
+	} else {
+		axis(1, at = axTicks(1) + 0.5, labels = xaxn[[2]][axTicks(1)])
+	}
 	xm   <- log10(drop_units(xm))
 	xrst <- matrix(.map2color(xm, col), ncol = ncol(xm))[nrow(xm):1, ]
 	rasterImage(xrst, xleft = 1, ybottom = 1, xright = ncol(xm) + 1, ytop = lmodl$nring + 1, 
@@ -192,6 +200,67 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 		rasterImage(xrst, xleft = min(xm, na.rm = T), ybottom = 0, xright = max(xm, na.rm = T), ytop = 1, interpolate = T)
 	}
 }
+
+#' Plot Bins
+#'
+#' @param x    A lisst object.
+#' @param bins A list of the rings to be summed. See details and examples.
+#' @param by   Ordinate. One of 'sample', 'time' or 'depth'
+#' @param col  A vector of colors.
+#' @param lty  A vector of line types.
+#'
+#' @export
+
+plotBins <- function(x, bins, by, col, lty) {
+	stopifnot(is.lisst(x))
+	if(!is(bins, 'list')) stop('bins must be a list', call. = FALSE)
+
+	lmodl <- attr(x, 'lmodl')
+	xm    <- as.matrix(x[, 1:lmodl$nring])
+	xm[xm == 0] <- 0.005
+	units(xm) <- units(x[, 1])
+	x[, 1:lmodl$nring] <- as.data.frame(xm)
+
+	xsm  <- list()
+	for(i in 1:length(bins)) xsm[[i]] <- lrings(x, bins[[i]])
+	xsm  <- do.call(rbind, xsm)
+	xsm[xsm == 0] <- NA
+	ylab <- units::make_unit_label(.zaxn(x), x[, 1])	
+	ylim <- range(xsm, na.rm = T)
+	xaxn <- .xaxn(x, by)
+
+	if(missing(col)) {
+		col <- rainbow(length(bins), start = 0.1)
+	} else if(length(col) != length(bins)) {
+		col <- rep(col, length(bins))[1:length(bins)] 
+	}
+	if(missing(lty)) {
+		lty <- rep(1, length(bins))
+	} else if(length(lty) != length(bins)) {
+		lty <- rep(lty, length(bins))[1:length(bins)] 
+	}
+
+	plot(xaxn[[2]], xsm[1, ], col = col[1], xlab = xaxn[[1]], ylab = ylab,
+		ylim = ylim, log = 'y', type = 'l', lty = lty[1])
+	for(i in 1:nrow(xsm)) lines(xaxn[[2]], xsm[i, ], col = col[i], lty = lty[i])
+	
+	invisible(xsm)
+}
+
+
+
+#l200ps1 <- lrings(l200p, bins = 1:12)
+#l200ps2 <- lrings(l200p, bins = 25:36)
+
+#ylim <- range(c(l200ps1, l200ps2), na.rm = T)
+#par(mar = c(5, 5, 1, 1))
+#plot(ltime(l200p), drop_units(l200ps1), type = 'l', xlab = 'Time', ylab = ylab, ylim = ylim, col = 'blue', log = 'y')
+#lines(ltime(l200p), l200ps2, col = 'red')
+#legend('topleft', c('1 to 10 µm', '66 to 500 µm'), lty = 1, col = c("blue", 'red'), bty = 'n')
+
+#}
+
+
 
 
 # if xu is not defined the default unit will be used.

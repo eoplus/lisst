@@ -4,7 +4,7 @@
 \alias{lrings}
 \title{Sum of ring values}
 \usage{
-lrings(x, rings)
+lrings(x, bins)
 }
 \arguments{
 \item{x}{A lisst object.}

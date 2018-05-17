@@ -20,6 +20,62 @@ test_that("read LISST-200X binary checks agains LISST-SOP raw output", {
   for(i in 1:59) expect_equal(binlisst[, i], binSOP[, i])
 })
 
+test_that("alternative read_lisst calls for LISST-100X works", {
+	fltest <- system.file("extdata", "DN_27.DAT", package = "lisst")
+	binlisst <- read_lisst(fltest, sn = '1298', pl = 0.05, yr = 2018, out = 'raw')
+	suppressWarnings(test   <- read_lisst(fltest, sn = '1298', pl = 0.05, out = 'raw'))
+	expect_identical(binlisst, test)
+	suppressWarnings(test   <- read_lisst(fltest, sn = '1298', yr = 2018, out = 'raw'))
+	expect_identical(binlisst, test)
+	suppressWarnings(test   <- read_lisst(fltest, sn = '1298', out = 'raw'))
+	expect_identical(binlisst, test)
+	suppressWarnings(test   <- read_lisst(fltest, model = '100XC', out = 'raw'))
+	expect_identical(drop_lisst(binlisst), drop_lisst(test))
+	zscat  <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+	binlisst <- read_lisst(fltest, sn = '1298', zscat = zscat, pl = 0.05, yr = 2018, out = 'raw')
+	zscat  <- t(read.table(zscat, header = F))
+	for(i in 1:38) units(zscat[, i]) <- 1
+	zscat  <- structure(zscat, type = 'raw', lproc = list(A = 1), 
+		linst = list(A = 1), lmodl = list(A = 1), zscat = list(A = 1), 
+		class = c("lisst", "data.frame"))
+	test   <- read_lisst(fltest, sn = '1298', zscat = zscat, pl = 0.05, yr = 2018, out = 'raw')
+	expect_identical(binlisst, test)
+
+	zscat  <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+	fltest <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+	prolisst <- read_lisst(fltest, sn = '1298', zscat = zscat, pl = 0.05, yr = 2018, out = 'vol')
+	suppressWarnings(test   <- read_lisst(fltest, model = '100XC'))
+	expect_identical(drop_lisst(prolisst), drop_lisst(test))
+})
+
+test_that("alternative read_lisst calls for LISST-200X works", {
+	fltest <- system.file("extdata", "sp_april.RBN", package = "lisst")
+	binlisst <- read_lisst(fltest, sn = '2028', pl = 0.025, out = 'raw')
+	suppressWarnings(test   <- read_lisst(fltest, sn = '2028', out = 'raw'))
+	expect_identical(binlisst, test)
+	suppressWarnings(test   <- read_lisst(fltest, out = 'raw'))
+	expect_identical(binlisst, test)
+
+# Background file created manualy from the one saved inside the instrument. Maybe
+# that is generating the error?
+#	zscat  <- system.file("extdata", "bg_lisst200_april.asc", package = "lisst")
+#	suppressWarnings(test   <- read_lisst(fltest, zscat = zscat, out = 'raw'))
+#	expect_identical(binlisst, test)
+
+#	zscat  <- t(read.table(zscat, header = F))
+#	for(i in c(1:42, 49:59)) units(zscat[, i]) <- 1
+#	zscat  <- structure(zscat, type = 'raw', lproc = list(A = 1), 
+#		linst = list(A = 1), lmodl = list(A = 1), zscat = list(A = 1), 
+#		class = c("lisst", "data.frame"))
+#	test   <- read_lisst(fltest, zscat = zscat, pl = 0.025, out = 'raw')
+#	expect_identical(drop_lisst(binlisst), drop_lisst(test))
+
+	fltest <- system.file("extdata", "sp_april_rs.csv", package = "lisst")
+	prolisst <- read_lisst(fltest, sn = '2028', pl = 0.025, out = 'vol')
+	test   <- read_lisst(fltest, model = '200X', pl = 0.025)
+	expect_identical(drop_lisst(prolisst), drop_lisst(test))
+})
+
 test_that("read_lisst will give proper warnings", {
 	fltest   <- system.file("extdata", "DN_27.DAT", package = "lisst")
 	expect_warning(read_lisst(fltest, sn = '1298', pl = 0.05, out = 'raw'), "yr not provided - using best guess")

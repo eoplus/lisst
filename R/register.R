@@ -184,7 +184,12 @@ lisst_reg <- function(model, path) {
 #' bins), per detector type (model dependent).
 #' binr  - Bin size range (µm) per inversion type (ss or rs) and per detector 
 #' type (model dependent).
-
+#'
+#' Note: Informations were retrieved from LISST user manuals for the respective
+#' models, except the water angles for the LISST-200X, that were taken from the
+#' LISST-VSF manual since the ring detector assembly is the same as in the 
+#' LISST-200X, while the LISST-200X manual don't provide angle information.
+ 
 .LISSTm <- list(
 	"100"  = list(
 		mod   = "100",
@@ -251,7 +256,11 @@ lisst_reg <- function(model, path) {
 		lvarn = c(paste("Bin", formatC(1:36, width = 2, flag = 0), sep = "_"),"TLaser","Battery","ExtI1","RLaser","Depth","Temperature","Year","Month","Day","Hour","Minute","Second","ExtI2","MeanD","TotVolConc","RelH", "AccX", "AccY", "AccZ", "RawP1","RawP2","EnvLight", "NU", "OptTrans","BeamAtt"),
 		varun = c(rep("ppm", 36), "mW", "V", "V", "mW", "m", "`°C`", "1", "1", "1", "hr", "min", "s", "V", "µm", "ppm", "`%`", "1", "1", "1", "1", "1", "1", "1", "1", "1/m"),
 		wang = list(
-			A = NULL
+			A = set_units(matrix(c(
+			rev(c(0.081,0.096,0.113,0.134,0.158,0.186,0.22,0.259,0.306,0.361,0.426,0.502,0.593,0.699,0.825,0.974,1.149,1.356,1.6,1.888,2.227,2.627,3.098,3.652,4.305,5.072,5.973,7.027,8.257,9.688,11.341,13.239,rep(NA, 4))),
+			rev(c(0.096,0.113,0.134,0.158,0.186,0.22,0.259,0.306,0.361,0.426,0.502,0.593,0.699,0.825,0.974,1.149,1.356,1.6,1.888,2.227,2.627,3.098,3.652,4.305,5.072,5.973,7.027,8.257,9.688,11.341,13.239,15.394,rep(NA, 4))),
+			rev(c(0.088,0.104,0.123,0.145,0.171,0.202,0.238,0.281,0.332,0.392,0.462,0.546,0.644,0.76,0.897,1.058,1.248,1.473,1.738,2.05,2.419,2.853,3.365,3.968,4.677,5.51,6.488,7.633,8.97,10.524,12.32,14.381,rep(NA, 4)))
+			), ncol = 3, dimnames = list(paste("Bin", formatC(1:36, width = 2, flag = 0), sep = "_"), c("Min", "Max", "Med"))) * pi / 180, rad)
 		),
 		binr = list(
 			A = list(

@@ -10,8 +10,14 @@ vignette: >
   %\VignetteEncoding{UTF-8}{inputenc}
 ---
 
+<style>
+body {
+text-align: justify}
+</style>
+
 ```{r echo=FALSE}
 knitr::opts_chunk$set(collapse = TRUE)
+library(units)
 units_options(negative_power = TRUE, parse = TRUE, group = c("(", ")"))
 ```
 
@@ -19,67 +25,77 @@ units_options(negative_power = TRUE, parse = TRUE, group = c("(", ")"))
 
 This vignette describes the use of the lisst package to read, process and 
 visualize data recorded by the Laser In-Situ Scattering and Transmissometry 
-(LISST) instruments, produced by Sequoia Scientific, Inc. The package was 
-created to have a single frame work of functions and structures to work with 
+(LISST) instruments, manufactured by Sequoia Scientific, Inc. The package was 
+created to have a single framework of functions and structures to work with 
 different LISST models, simplifying analysis task when dealing with multiple
-instruments or upgrade to a new model. The [oce](https://cran.r-project.org/package=oce) 
-pakage provides function for visualition of LISST data, but is limited to the 
-LISST-100(X) and to processed data (particle size distribution) as produced by 
-the LISST-SOP and don't include specific processing or subsetting utilities.
+instruments or upgrade to a new model. It was also the intention to provide 
+additional utilities as data types (VSF), subseting and plotting.
 
-## Quick overall demonstration
+The [oce](https://cran.r-project.org/package=oce) pakage also provides functions 
+for visualition of LISST data, but is limited to the LISST-100(X) and to processed 
+data (particle size distribution) as produced by the LISST-SOP.
 
-The following chapters will better describe the functionalities, but here is a 
-quick overview from first time registering an instrument to the final plot of the
-desired quantity.
+Internally, the LISST data is represented as a data.frame with metadata stored 
+as attributes. The metadata contains all information necessary for processing 
+and plotting, such as model and instrument specific information, background 
+scattering and size and angle ranges of each detector ring. Each column of the 
+data.frame - the core of the lisst object - is stored as a 
+[units](https://CRAN.R-project.org/package=units) object, with the exception of 
+those related to time.
+
+The usage of the package functions will be illustrated with two examples: (1) a day 
+mooring of a LISST-200X at the Spuikom lake in Ostend, Belgium; and (2) a surface 
+sample with a LISST-100X in the Donkmeer lake, Belgium. The latter sections will 
+present a more detailed discussion on the data representation and the functions 
+provided by the package.
+
+## LISST-200X Mooring example
+
+A LISST-200X (SN 2028) from the Flanders Marine Institute (VLIZ, in flemish) was moored from ~9:00 to 16:00 (local time) at the VLIZ monitoring buoy in the center of the Spuikom, in Ostend, Belgium. The data collection was planned to provide information on temporal changes in particle size distribution and concentration during a day campaign of optical measurements in the lake. Start and end conditions were set to the external swtich, with an average of 10 samples every 30 second, and no path reduction module (PRM) was used.
+
+The binary file recorded by the instrument was processed with the LISST SOP to retrieve the particle size distribution and concentration in ppm with a random shape particle model. Our first task is to import the processed file into R.
 
 ```{r}
 library(lisst)
 
-# Register the LISST instrument:
-path  <- system.file("extdata", package = "lisst")
-model <- 100
-lisst_reg(model, path)
-
-# Read a LISST data file:
-sn    <- 1298
-pl    <- 0.05
-yr    <- 2018 
-zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
-flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst") # LISST-SOP processed file
-flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")    # LISST binary file
-
-lop   <- read_lisst(flp, sn, pl, zscat, yr)
-lob   <- read_lisst(flb, sn, pl, zscat, yr)
-
-# Subset by sample, deth or time:
-lob_ss <- lob[1:3, ]         # First three samples
-lob_ss <- lob['0|5', ]       # First five meters
-lob_ss <- lob['2018-03', ]   # Samples in march 2018
-
-# Conversion between data types:
-lop_pnc <- lget(lop, 'pnc')
-lob_cal <- lget(lob, 'cal')
-
-# Concatenation:
-lop_d <- c(lop, lop_pnc)
-
-# Statistics:
-#lob_mn <- lstat(lob, mean)
-#lob_md <- lstat(lob, median)
-#breaks <- c(0, 5, 10, 15)
-#lob_mn <- lgetstat(lob, mean, s = breaks) # Breaks by sample index
-#lob_mn <- lgetstat(lob, mean, d = breaks) # Breaks by sample depths
-#breaks <- c("2018-01", "2018-02", "2018-03", "2018-04")
-#lob_mn <- lgetstat(lob, mean, t = breaks) # Breaks by sample time
- 
-# Plots:
-# par(mfcol = c(2, 2))
-# plot(lob[40:144, ])
-# plot(lop[40:144, ], type = 'pnc')
-# plot(lob[40:144, ], type = 'pf', xu = 'degree')
-# plot(lop[40:144, ], type = 'vol')
+fl200 <- system.file("extdata", "sp_april_rs.csv", package = "lisst")
+l200p <- read_lisst(fl200)
 ```
+
+Because no PRM was used, it is not necessary to specify the water path length between the source and detector and the function will use the standard path length of the instrument (with a warning). If necessary, it can be specified with argument 'pl' (in meters).
+
+We can have a first look at the data in the lisst object. All data columns are kept, their contents indicated by descriptive short names and their units printed along with their values. Every data row has a time stamp in standard POSIX format.
+
+```{r}
+head(l200p, n = 2)
+```
+
+Lets inspect the data in a more convinient way, using a Hovmöller diagram:
+
+```{r, fig.height = 7, fig.width = 6, fig.align="center"}
+lhov(l200p, by = 'time', norm = F)
+```
+
+The instrument was keept on recording much beyond the sampling period, so we will subset to keep only the records for when we know the instrument was in the water. We can do this using ISO-8601 standard notation for time (and range), as implemented for time subsetting in package [xts](https://CRAN.R-project.org/package=xts). Since the time zone of the instrument was UTC, we will use a subset of two hours (CEST = UTC+2).
+
+```{r, fig.height = 7, fig.width = 6, fig.align="center"}
+l200p <- l200p['2018-04-19 07:30/2018-04-19 14:00', ]
+lhov(l200p, by = 'time', norm = F)
+```
+
+The upper panel show what appears to be a diel cycle, with increase in the total volume of particles. From the size bins in the middle panel, we see that this increase seems restricted to the larger population that is apparently increasing in size. We can separate those components by summing
+the values of the bins of interest. For this data is sufficient to sum two sets of bins, from 1:14 and from 25:36. If in doubt, the size ranges of bins can be retrieved with the function 'lbinr'.
+
+```{r, fig.height = 4, fig.width = 5, fig.align="center"}
+plotBins(l200p, bins = list(1:14, 25:36), by = 'time', col = c("blue", "red"))
+binr  <- lbinr(l200p)
+r1    <- range(binr[1:14,])
+r2    <- range(binr[25:36,])
+ltext <- c(eval(substitute(expression(x-y~mu*m), list(x = r1[1], y = r1[2]))),
+           eval(substitute(expression(x-y~mu*m), list(x = r2[1], y = r2[2]))))
+legend('topleft', legend = ltext, lty = 1, col = c("blue", 'red'), bty = 'n', cex = 0.8)
+```
+
 
 ## Reading data
 
@@ -96,9 +112,9 @@ deals only with the object. Here is an example on how to register a LISST, for t
 LISST-100X SN1298:
 
 ```{r}
-path  <- system.file("extdata", package = "lisst")
-model <- 100
-lisst_reg(model, path)
+#path  <- system.file("extdata", package = "lisst")
+#model <- 100
+#lisst_reg(model, path)
 ```
 
 The registration need only to be done once, and is saved to the package data, 
@@ -109,18 +125,18 @@ LISST is registered, reading an data file is simple and can be performed in
 diferent ways:
 
 ```{r}
-sn    <- 1298
-pl    <- 0.05
-yr    <- 2018 
-zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
+#sn    <- 1298
+#pl    <- 0.05
+#yr    <- 2018 
+#zscat <- system.file("extdata", "bg_20180326.asc", package = "lisst")
 
 # For a processed file:
-flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
-lop   <- read_lisst(flp, sn, pl, zscat, yr)
+#flp   <- system.file("extdata", "DN_27_rs.asc", package = "lisst")
+#lop   <- read_lisst(flp, sn, pl, zscat, yr)
 
 # For a binary file:
-flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
-lob   <- read_lisst(flb, sn, pl, zscat, yr)
+#flb   <- system.file("extdata", "DN_27.DAT", package = "lisst")
+#lob   <- read_lisst(flb, sn, pl, zscat, yr)
 ```
 
 As the example shows, the function will determine the file type automaticly, 
@@ -137,7 +153,7 @@ a file for an instrument that is not registered - this is limited to the same
 cases when zscat can be omitted, and instead of providing sn, a model is sufficient.
 
 ```{r}
-lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
+#lom <- read_lisst(flp, pl = pl, yr = yr, model = "100CX")
 ```
 As a final note, when reading a processed file or when reading a binary file as 
 calibrated units (out = 'cal', the default for binary files) the lisst object will
@@ -155,8 +171,8 @@ attenuation are corrected to add effect of pure water. A correction is also
 applied in the rings digital counts for the binary data.
 
 ```{r}
-lop[15, , drop = FALSE]
-lob[15, , drop = FALSE]
+#lop[15, , drop = FALSE]
+#lob[15, , drop = FALSE]
 ```
 
 ## Processing
@@ -170,12 +186,12 @@ Function form the calibrated values.
 
 ```{r}
 # Converting from vol conc to n conc:
-lop[15, 1:3, drop = FALSE]
-lget(lop, 'pnc')[15, 1:3, drop = FALSE]
+#lop[15, 1:3, drop = FALSE]
+#lget(lop, 'pnc')[15, 1:3, drop = FALSE]
 
 # Converting from cal to VSF:
-lob[15, 1:3, drop = FALSE]
-lget(lob, 'vsf')[15, 1:3, drop = FALSE]
+#lob[15, 1:3, drop = FALSE]
+#lget(lob, 'vsf')[15, 1:3, drop = FALSE]
 ```
 
 Is also possible to extract PSD model parameters. At the curent version, only the
@@ -183,7 +199,7 @@ Junge model is available:
 
 ```{r}
 # Extract the Junge slope for a PSD:
-lfit(lop)[15:17]
+#lfit(lop)[15:17]
 ```
 
 ## Visualizing
@@ -214,9 +230,9 @@ sum of teh values for all detectors and so separate variations in concentration
 from variations in distribution shape.
 
 ```{r, fig.height = 7, fig.width = 7}
-lov <- lget(lob, 'vsf')
-lhov(lob, by = 'sample')
-lhov(lob, by = 'sample', norm = FALSE)
+#lov <- lget(lob, 'vsf')
+#lhov(lob, by = 'sample')
+#lhov(lob, by = 'sample', norm = FALSE)
 ```
 
 

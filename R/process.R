@@ -24,16 +24,18 @@ ltime <- function(x) {
 #'
 #' @export
 
-lrings <- function(x, rings) {
+lrings <- function(x, bins) {
 	stopifnot(is.lisst(x))
 	lmodl <- attr(x, 'lmodl')
 	linst <- attr(x, 'linst')
-	if(missing(rings)) rings <- 1:lmodl$nring
-	if(max(rings) > lmodl$nring)
+	if(missing(bins)) bins <- 1:lmodl$nring
+	if(max(bins) > lmodl$nring)
 		stop(paste0('Maximum rings in LISST-', lmodl$mod, 
 			ifelse(linst$X, 'X', ''), " is ", lmodl$nring), 
 			call. = FALSE)
-	apply(as.matrix(x[, rings]), 1, sum, na.rm = T)
+	rs <- apply(as.matrix(x[, bins]), 1, sum, na.rm = T)
+	units(rs) <- units(x[, 1])
+	rs
 }
 
 #' Fit a PSD model to the lisst data

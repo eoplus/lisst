@@ -75,6 +75,9 @@ c.lisst <- function(...) {
 #'
 #' @export
 
+# Maybe try: if(!missing(j)) if(!all(j == 1:ncol(x))) drop <- TRUE
+# so that drop only happens in 
+
 `[.lisst` <- function(x, i, j, ..., drop = TRUE) {
 	stopifnot(is.lisst(x))
 	lxts <- xts(rep(1, nrow(x)), order.by = ltime(x), unique = FALSE)
@@ -97,6 +100,8 @@ c.lisst <- function(...) {
 	if(((missing(i) && length(j) == 1) || (missing(j) && length(i) == 1)) && drop) {
 		#x <- drop_lisst(x)
 		NextMethod(drop = drop)
+#drop <- FALSE
+#if(!missing(j)) if(!all(j == 1:ncol(x))) drop <- TRUE
 	} else {
 		structure(NextMethod(drop = drop), 
 			'type'  = attr(x, 'type'),

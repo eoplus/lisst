@@ -17,16 +17,15 @@
 #' @param sn    Serial number of the instrument. Optionally, can be omitted when 
 #'              reading a LISST-SOP processed file or when out = 'raw' (binary 
 #'              files). In this case, instrument model must be supplied to 
-#'              argument model.
+#'              argument model. Ignored for LISST_200X binary files.
 #' @param yr    The year of first measurement in the data file. Only necessary 
 #'              for LISST-100(X). If not provided, function will make a best 
 #'              guess (with a warning). See details.
 #' @param out   The output format. Valid options are 'raw', 'cor', 'cal', 'vsf', 
 #'              'vol' and 'pnc'. See details.
-#' @param model A character vector of the instrument model (e.g. "200" for 
-#'              LISST-200X). For the LISST-100(X), the detector type must be 
-#'              included in the name (e.g., "100C" or "100XC"). Ignored if sn is 
-#'              provided.
+#' @param model A character vector of the instrument model. The detector type 
+#'              must be included in the name (e.g., "100C" or "100XC"). Ignored 
+#'              if sn is provided and for LISST-200X files.
 #' @param tz    Time zone to interpret time indexing. Defaults to UTC.
 #' @param trant Logical. Should a optical transmittance threshold be applied? If
 #'              TRUE, ring values for a given sample with transmittance < 0.3 
@@ -48,7 +47,7 @@
 #' (for all variables). Aditionally, the transmittance and the particle beam 
 #' attenuation are added in 'cal' type lisst objects. The particle volume 
 #' scattering function is the calibrated values normalized by the detector solid
-#' angle, length of the path generating the signal and energy enetering the 
+#' angle, length of the path generating the signal and energy entering the 
 #' path. If out is not provided, 'vsf' will be returned for a binary file input. 
 #' For processed files, out can be 'vol' for the volume concentration (ppm) or 
 #' 'pnc' for the number concentration (1/L/µm). If not provided, 'vol' will be 
@@ -57,14 +56,14 @@
 #' model not implemented), so 'vol' and 'pnc' can only be selected for processed 
 #' files. Functions \code{lget}, \code{lgetraw}, \code{lgetcor}, \code{lgetcal}, 
 #' \code{lgetvsf}, \code{lgetvol} and \code{lgetpnc} allow to switch between 
-#' types without need to read from disk.
+#' types without need to read again from disk.
 #'
 #' If the background data is saved as a binary file, it must be opened first 
 #' with \code{read_lisst} and aggregated to one row lisst object with 
 #' \link{lstat} before being passed to a new \code{read_lisst} call to open the 
 #' data itself. 
 #'
-#' The time indexing, with date/time in POSIX format is added to all created 
+#' A time indexing, with date/time in POSIX format is added to all created 
 #' objects. If yr is missing when reading a LISST-100(X) file, the function will 
 #' 'guess' its value, by acessing the file system modification date information. 
 #' The modification date is used to be consistent across platforms, since 
@@ -74,26 +73,23 @@
 #' the case of binary file, the year will be then precise for the year of 
 #' \emph{last} measurement and the function will handle it appropriatly. For a 
 #' processed file the logic will break down in cases that the file is processed 
-#' in a different year than the final measurement. If a guess was not correct 
-#' and the user have the approriate information, is possible to directly alter 
-#' the Time column in the lisst object using standard R tools to handle POSIX 
-#' objects as an alternative to call \code{read_lisst} again.
+#' in a different year than the final measurement. It is always better to
+#' specify all necessary information.
 #'
 #' @return 
 #' The function returns an object of class lisst, an S3 Class inheriting from 
 #' classes data.frame and units. Essentially the data is stored as units objects 
-#' in a data.frame, wich stores the ancilary data as attributes. The number of 
-#' columns in the data.frame is model dependent and is always one larger than 
-#' the standard LISST data since date/time in POSIXct format is added to the 
-#' objects.
+#' in a data.frame, with LISST metadata stored as attributes. For consistency 
+#' with SOP and MatLab functions provided by Sequoia, all data columns are kept,
+#' including original time columns and the LISST-200X unused data column.
 #'
 #' The attributes are not expected to be manipulated directly, so are only 
 #' briefly described:
 #' \itemize{
 #'   \item type  - The type of data in the lisst object;
+#'   \item lproc - Processing type (rs or ss) if any;
 #'   \item linst - Instrument specific data;
 #'   \item lmodl - Model specific data;
-#'   \item lproc - Processing applied to data (including inversion model);
 #'   \item zscat - Background scattering values.
 #' }
 #'
