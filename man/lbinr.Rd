@@ -29,6 +29,6 @@ created from LISST SOP processed files will contain ity information.
 }
 \examples{
 lbinr(mooring)
-lbinr(,'100XC', 'rs')
+lbinr('100XC', 'rs')
 
 }
