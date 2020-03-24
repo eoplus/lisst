@@ -50,7 +50,9 @@ in a data.frame, with LISST metadata stored as attributes. For consistency
 with SOP and MatLab functions provided by Sequoia, all data columns are kept,
 including original time columns and the LISST-200X unused data column.
 
-The attributes are not expected to be manipulated directly, so are only 
+The attributes are not expected to be manipulated directly, but functions are 
+available to extract some relevant metadata (?) 
+information so are only 
 briefly described:
 \itemize{
   \item type  - The type of data in the lisst object;

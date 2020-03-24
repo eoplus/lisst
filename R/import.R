@@ -83,7 +83,9 @@
 #' with SOP and MatLab functions provided by Sequoia, all data columns are kept,
 #' including original time columns and the LISST-200X unused data column.
 #'
-#' The attributes are not expected to be manipulated directly, so are only 
+#' The attributes are not expected to be manipulated directly, but functions are 
+#' available to extract some relevant metadata (?) 
+#' information so are only 
 #' briefly described:
 #' \itemize{
 #'   \item type  - The type of data in the lisst object;
@@ -153,8 +155,8 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	if(missing(out) && mode == "processed") out <- "vol"
 	if(missing(out) && mode == "binary")    out <- "vsf"
 
-	if(mode == "processed" && !(out == "vol" || out == "pnc"))
-		stop("out for LISST SOP processed files must be 'vol' or 'pnc'", 
+	if(mode == "processed" && !(out == "vol" || out == "pnc" || out == "csa"))
+		stop("out for LISST SOP processed files must be 'vol', 'pnc' or 'csa'", 
 			call. = FALSE)
 	if(mode == "binary" && (out == "vol" || out == "pnc"))
 		stop("out for binary LISST files must be 'raw', 'cor', 'cal' or", 
@@ -325,7 +327,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 	colnames(x) <- lmodl$lvarn
 	mfact <- drop_units(lmodl$pl / pl)					# PRM correction factor
 #	for(i in 1:lmodl$nring) x[, i] <- x[, i] * mfact			# PRM correction for volume concentration
-	x[, 1:lmodl$nring] <- x[, 1:lmodl$nring] * mfact
+	x[, 1:lmodl$nring] <- x[, 1:lmodl$nring, drop = F] * mfact
 	x[, "BeamAtt"] <- x[, "BeamAtt"] * mfact				# PRM correction for beam attenuation
 	lmodl$pl <- pl								# Store the true path length in object metadata
 
@@ -399,12 +401,12 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 		seek(fid, (9 * blksz) + 2, 'start')
 		x <- readBin(fid, "integer", n = file.info(fl)$size - seek(fid), 
 			signed = FALSE, size = 2, endian = "big")
-		x <- matrix(c(x, NA), ncol = 60, byrow = T)[, -60]
+		x <- matrix(c(x, NA), ncol = 60, byrow = T)[, -60, drop = F]
 		close(fid)
 
 		x[x > 40950] <- x[x > 40950] - 65536
 		zsc[zsc > 40950] <- zsc[zsc > 40950] - 65536
-		x[, 1:lmodl$nring] <- x[, 1:lmodl$nring] / 10 
+		x[, 1:lmodl$nring] <- x[, 1:lmodl$nring, drop = F] / 10 
 		zsc[1:lmodl$nring] <- zsc[1:lmodl$nring] / 10
 
 		x <- as.data.frame(x)

@@ -26,5 +26,6 @@ l_cal <- lgetcal(donkmeer_bin)
 }
 \seealso{
 \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-\code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+\code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}},
+\code{\link{lgetcsa}}
 }

@@ -10,7 +10,7 @@ lget(x, type)
 \item{x}{A lisst object.}
 
 \item{type}{A character specifing the lisst data type. One of 'raw', 'cor', 
-'cal', 'vsf', 'vol', 'pnc'. See details.}
+'cal', 'vsf', 'vol', 'pnc', 'csa'. See details.}
 }
 \description{
 This set of functions allow for the convertion between lisst data types.
@@ -34,7 +34,8 @@ type. As of this version is only possible to convert between 'raw', 'cor',
              and the path of water generating the signal.}
   \item{vol}{The particle volume concentration (ppm volume) per size bin, as 
 	inverted from the scattering data by the LISST-SOP.}
-  \item{pnc}{The particle number concentration per volume and µm size.}
+  \item{pnc}{The particle number per volume and µm size.}
+  \item{csa}{The cross section area per volume.}
 }
 
 See the documentation of the lget functions for further details.

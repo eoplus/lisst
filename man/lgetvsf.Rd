@@ -33,5 +33,6 @@ and Oceanography 50, 6, 1787-1794. DOI: 10.4319/lo.2005.50.6.1787
 }
 \seealso{
 \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-\code{\link{lgetcal}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+\code{\link{lgetcal}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}},
+\code{\link{lgetcsa}}
 }

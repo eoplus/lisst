@@ -7,7 +7,7 @@
 lgetpnc(x)
 }
 \arguments{
-\item{x}{A lisst object of type 'vol'.}
+\item{x}{A lisst object of type 'vol' or 'csa'.}
 }
 \description{
 The function converts the PSD in volume concentration (µL/L, ppm) to number 
@@ -34,5 +34,6 @@ DOI:10.1029/2010JC006256.
 }
 \seealso{
 \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-\code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetpnc}}
+\code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}},
+\code{\link{lgetcsa}}
 }

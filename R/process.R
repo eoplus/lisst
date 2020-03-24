@@ -1,16 +1,5 @@
 
-#' Extract time index
-#'
-#' This function extracts the time index of each observation.
-#'
-#' @param x  A lisst object.
-#'
-#' @export
 
-ltime <- function(x) {
-	stopifnot(is.lisst(x))
-	as.POSIXct(rownames(x))
-}
 
 #' Sum of ring values
 #'
@@ -102,8 +91,20 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 	else if(!(fun == 'mean' || fun == 'median' || fun == 'sd'))
 		stop("fun must be 'mean', 'median' or 'sd'.", call. = FALSE)
 
+	# Should be removed if just fluctuations...
+	id <- which(drop_units(x$OptTrans) < 0.3)
+	x$OptTrans[id] <- NA
+	x$BeamAtt[id]  <- NA
+
 	xl <- list()
-	for(i in 1:length(brks)) xl[[i]] <- x[brks[[i]], , drop = FALSE]
+	for(i in 1:length(brks)) {
+		xl[[i]] <- x[brks[[i]], , drop = FALSE]
+		if(nrow(xl[[i]]) == 0) {
+			xl[[i]] <- matrix(rep(NA, ncol(xl[[i]])), nrow = 1)
+			xl[[i]] <- as.data.frame(xl[[i]])
+
+		}
+	}
 	xb <- do.call(rbind, lapply(xl, fun, ...))
 	xb
 }
@@ -118,6 +119,7 @@ lstat <- function(x, brks, fun = 'mean', ...) {
 mean.lisst <- function(x, ...) {
 	stopifnot(is.lisst(x))
 	if(nrow(x) == 1) return(x)
+	if(nrow(x) == 0) return(x[1, , drop = F])
 	xm <- x[1, , drop = FALSE]
 	xm[1, ] <- as.data.frame(sapply(x, mean, na.rm = TRUE, simplify = F))
 	rownames(xm) <- format(mean(ltime(x)), "%Y-%m-%d %H:%M:%OS1 %Z")
@@ -152,7 +154,7 @@ sd.default <- stats::sd
 #' @describeIn lstat Compute the median for lisst objects
 #'
 #' @examples
-#' median(donkmeer_bin)
+#' sd(donkmeer_bin)
 #'
 #' @export
 

@@ -80,11 +80,11 @@ lisst_reg <- function(model, path) {
 		.LISSTi[[as.character(dat[1])]] <- list(
 			mod = model,
 			sn  = sn,
-			dty = as.character(dat[, 2]),
-			X   = dat[, 5] == "X",
+			dty = toupper(sub(" ", "", dat[, 2])),
+			X   = sub(" ", "", dat[, 5]) == "X",
 			fzscat = zsc,
 			ringcf = set_units(rig, 1),
-			ringcc = set_units(5 / 4096 / dat[, 3], 'W'),
+			ringcc = set_units(2.596e-9, 'W'),
 			volcc  = dat[, 4],
 			lpowcc = set_units(hk[grep("Laser Power", hkn), ], 'mW'),
 			battcc = set_units(hk[grep("Battery", hkn), ], 'V'),
@@ -130,7 +130,8 @@ lisst_reg <- function(model, path) {
 			X   = TRUE,
 			fzscat = zsc,
 			ringcf = set_units(rig, 1),
-			ringcc = set_units(hk[9], 'W'),				# Check with Sequoia! Seems to high...
+#			ringcc = set_units(hk[9], 'W'),				# Check with Sequoia! Seems to high...
+			ringcc = set_units(2.596e-9, 'W'),			
 			volcc  = vcc,
 			lpowcc = set_units(c(hk[17], 0), 'mW'),
 			battcc = set_units(c(0.01, 0), 'V'),

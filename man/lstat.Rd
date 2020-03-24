@@ -54,6 +54,6 @@ mean(donkmeer_bin)
 
 median(donkmeer_bin)
 
-median(donkmeer_bin)
+sd(donkmeer_bin)
 
 }

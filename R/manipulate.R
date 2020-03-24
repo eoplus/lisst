@@ -119,7 +119,7 @@ c.lisst <- function(...) {
 #'
 #' @param x    A lisst object.
 #' @param type A character specifing the lisst data type. One of 'raw', 'cor', 
-#' 'cal', 'vsf', 'vol', 'pnc'. See details.
+#' 'cal', 'vsf', 'vol', 'pnc', 'csa'. See details.
 #' 
 #' @details lget dispatch the appropriate lgetxxx function acording to parameter 
 #' type. As of this version is only possible to convert between 'raw', 'cor', 
@@ -139,7 +139,8 @@ c.lisst <- function(...) {
 #'              and the path of water generating the signal.}
 #'   \item{vol}{The particle volume concentration (ppm volume) per size bin, as 
 #'		inverted from the scattering data by the LISST-SOP.}
-#'   \item{pnc}{The particle number concentration per volume and µm size.}
+#'   \item{pnc}{The particle number per volume and µm size.}
+#'   \item{csa}{The cross section area per volume.}
 #' }
 #' 
 #' See the documentation of the lget functions for further details.
@@ -165,7 +166,8 @@ lget <- function(x, type) {
 		"vsf" = lgetvsf(x),
 		"vol" = lgetvol(x),
 		"pnc" = lgetpnc(x),
-		stop("type must be one of: 'raw', 'cor', 'cal', 'vsf', 'vol', 'pnc'", call. = FALSE)
+		"csa" = lgetcsa(x),
+		stop("type must be one of: 'raw', 'cor', 'cal', 'vsf', 'vol', 'pnc', 'csa'", call. = FALSE)
 	)
 }
 
@@ -236,7 +238,8 @@ lgetraw <- function(x) {
 #' 0.439 and 5.808e-4 1/m, respectivelly.
 #'
 #' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcal}}, 
-#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}},
+#' \code{\link{lgetcsa}}
 #'
 #' @examples
 #' l_cor <- lgetcor(donkmeer_bin)
@@ -248,7 +251,7 @@ lgetcor <- function(x) {
 	typ <- attr(x, "type")
 	if(typ == 'cor') return(x)
 	else if(typ == 'vsf') {
-		x <- lget(x, 'cal')
+		x   <- lget(x, 'cal')
 		typ <- attr(x, "type")
 	}
 	else if(!(typ == 'cal' || typ == 'raw'))
@@ -311,7 +314,8 @@ lgetcor <- function(x) {
 #' through \code{read_lisst}.
 #'
 #' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#' \code{\link{lgetvsf}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}},
+#' \code{\link{lgetcsa}}
 #'
 #' @examples
 #' l_cal <- lgetcal(donkmeer_bin)
@@ -385,7 +389,8 @@ lgetcal <- function(x) {
 #' and Oceanography 50, 6, 1787-1794. DOI: 10.4319/lo.2005.50.6.1787
 #'
 #' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-#' \code{\link{lgetcal}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}}
+#' \code{\link{lgetcal}}, \code{\link{lgetvol}}, \code{\link{lgetpnc}},
+#' \code{\link{lgetcsa}}
 #'
 #' @examples
 #' l_vsf <- lget(lgetraw(donkmeer_bin), 'vsf')
@@ -409,7 +414,7 @@ lgetvsf <- function(x) {
 	lmodl <- attr(x, "lmodl")
 	zscat <- attr(x, "zscat")
 
-	if(lmodl$mod == '200') stop('VSF retrieval for LISST-200X is not implemented', call. = FALSE)
+#	if(lmodl$mod == '200') stop('VSF retrieval for LISST-200X is not implemented', call. = FALSE)
 	wang  <- c(lmodl$wang[1, 2], lmodl$wang[, 1])
 
 	for(i in 1:lmodl$nring) {
@@ -427,7 +432,7 @@ lgetvsf <- function(x) {
 #' The function converts the PSD in volume concentration (µL/L, ppm) to number 
 #' concentration (particle/L/µm).
 #'
-#' @param x A lisst object of type 'vol'.
+#' @param x A lisst object of type 'vol' or 'csa'.
 #'
 #' @details Volume concentration is converted to number concentration by using 
 #' the volume of a sphere with radius equal to half the median particle size
@@ -444,7 +449,8 @@ lgetvsf <- function(x) {
 #' DOI:10.1029/2010JC006256.
 #'
 #' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetpnc}}
+#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}},
+#' \code{\link{lgetcsa}}
 #'
 #' @examples
 #' l_pnc <- lgetpnc(donkmeer_pro)
@@ -454,10 +460,10 @@ lgetvsf <- function(x) {
 lgetpnc <- function(x) {
 	stopifnot(is.lisst(x))
 	typ <- attr(x, "type")
-	if(typ == "pnc") return(x)
-	if(typ != "vol")
-		stop("Particle number concentration can only be retrieved a 'vol' lisst object", 
-			call. = FALSE)
+	if(typ == 'pnc') return(x)
+	else if(typ == 'csa') x <- lget(x, 'vol')
+	else if(typ != 'vol') stop("Particle number concentration can only be retrieved a 'vol'",
+			"or 'csa' lisst object", call. = FALSE)
 
 	linst <- attr(x, "linst")
 	lmodl <- attr(x, "lmodl")
@@ -474,17 +480,68 @@ lgetpnc <- function(x) {
 	x
 }
 
+#' Retrieve PSD in cross sectional area concentration
+#'
+#' The function converts the PSD in volume concentration (µL/L, ppm) to cross 
+#' sectional concentration (m2/m3).
+#'
+#' @param x A lisst object of type 'vol' or 'pnc'.
+#'
+#' @details Volume concentration is converted to cross sectional concentration by 
+#' using the cross section and volume of a sphere with radius equal to half the 
+#' median particle size for each bin. The cross sectional concentration is then the 
+#' sphere equivalent cross section concentration.
+#'
+#' @references
+#' Slade, W. H. and Boss, E. S. 2015. Spectral attenuation and backscattering as 
+#' indicators of average particle size. Applied Optics 54, 24, 7264-7277. 
+#' DOI: 10.1364/AO.54.007264
+#'
+#' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
+#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}},
+#' \code{\link{lgetpnc}}
+#'
+#' @examples
+#' l_csa <- lgetcsa(donkmeer_pro)
+#'
+#' @export
+
+lgetcsa <- function(x) {
+	stopifnot(is.lisst(x))
+	typ <- attr(x, "type")
+	if(typ == 'csa') return(x)
+	else if(typ == 'pnc') x <- lget(x, 'vol')
+	else if(typ != 'vol') stop("Particle number concentration can only be retrieved a 'vol' ",
+			"or 'pnc' lisst object", call. = FALSE)
+
+	linst <- attr(x, "linst")
+	lmodl <- attr(x, "lmodl")
+	lproc <- attr(x, "lproc")
+
+        bins  <- lmodl$binr[[lproc$ity]]
+	spvol <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, 'm^3')
+	spcsa <- set_units(pi * (bins[, 3] / 2)^2, 'm^2')
+	fact  <- spcsa * spvol^-1
+	for(i in 1:lmodl$nring) {
+		x[, i] <- set_units(x[, i] * fact[i] , 'm^2/m^3')
+	}
+	attr(x, "type") <- "csa"
+	x
+}
+
+
 #' Retrieve PSD in volume concentration
 #'
 #' The function converts the PSD in particle concentration (particle/L/µm) back 
 #' to the original data in volume concentration (µL/L, ppm).
 #'
-#' @param x A lisst object of type 'pnc'.
+#' @param x A lisst object of type 'pnc' or 'csa'.
 #'
 #' @details It merelly reverts the multiplication factors used by \code{lgetpnc}.
 #'
 #' @seealso \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}}
+#' \code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetpnc}},
+#' \code{\link{lgetcsa}} 
 #'
 #' @examples
 #' l_vol <- lget(lgetpnc(donkmeer_pro), 'vol')
@@ -495,24 +552,36 @@ lgetpnc <- function(x) {
 lgetvol <- function(x) {
 	stopifnot(is.lisst(x))
 	typ <- attr(x, "type")
-	if(typ == "vol") return(x)
-	if(typ != "pnc")
-		stop("Particle volume concentration can only be retrieved from a 'pnc' lisst ",
-			"object", call. = FALSE)
 
 	linst <- attr(x, "linst")
 	lmodl <- attr(x, "lmodl")
 	lproc <- attr(x, "lproc")
 
         bins  <- lmodl$binr[[lproc$ity]]
-	nconc <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, 'L')
-        binl  <- bins[, 2] - bins[, 1]
-	fact  <- nconc^-1 * binl^-1
-	for(i in 1:lmodl$nring) {
-#		x[, i] <- set_units(x[, i] / fact[i], ppm) # Error; seems a bug in the development version of units...
-		x[, i] <- set_units(drop_units(x[, i] / fact[i]) * 1e6, 'ppm')
-	}
-	attr(x, "type") <- "vol"
-	return(x)
+
+	if(typ == 'vol') return(x)
+	else if(typ == 'pnc') {
+		spvol <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, 'L')
+	        binl  <- bins[, 2] - bins[, 1]
+		fact  <- spvol^-1 * binl^-1
+		for(i in 1:lmodl$nring) {
+		#	x[, i] <- set_units(x[, i] / fact[i], ppm) # Error: by setting to ppm should apply a factor of 10e6 since unit is 1, but that does not happen automatically
+			x[, i] <- set_units(drop_units(x[, i] / fact[i]) * 1e6, 'ppm')
+		}
+		attr(x, "type") <- "vol"
+		return(x)
+	} else if(typ == 'csa') {
+		spvol <- set_units(4 * pi * (bins[, 3] / 2)^3 / 3, 'm3')
+		spcsa <- set_units(pi * (bins[, 3] / 2)^2, 'm2')
+		fact  <- spcsa * spvol^-1
+		for(i in 1:lmodl$nring) {
+		#	x[, i] <- set_units(x[, i] / fact[i], ppm) # Error: by setting to ppm should apply a factor of 10e6 since unit is 1, but that does not happen automatically
+			x[, i] <- set_units(drop_units(x[, i] / fact[i]) * 1e6, 'ppm')
+		}
+		attr(x, "type") <- "vol"
+		return(x)
+	} else stop("Particle volume concentration can only be retrieved from a 'pnc'",
+			" or 'csa' lisst object", call. = FALSE)
+
 }
 

@@ -18,18 +18,21 @@
 		cal = list("'Bins'", set_units(1:lmodl$nring, 1)),
 		vsf = list("'Scattering Angle'", lmodl$wang[, 3]),
 		vol = ,
-		pnc = list("'Size'", lmodl$binr[[ity]][, 3])
+		pnc = ,
+		csa = list("'Size'", lmodl$binr[[ity]][, 3])
 	)
 }
 
 .zaxn <- function(x) {
 	switch(attr(x, "type"),
-	raw = ,
-	cor = "'Digital Number'",
-	cal = "'Laser Power'",
-	vsf = "'Volume Scattering Function'",
-	vol = "'Volume Concentration'",
-	pnc = "'Number Concentration'")
+		raw = ,
+		cor = "'Digital Number'",
+		cal = "'Laser Power'",
+		vsf = "'Volume Scattering Function'",
+		vol = "'Volume Concentration'",
+		pnc = "'Number Concentration'",
+		csa = "'Cross sectional Concentration'"
+	)
 }
 
 .map2color <- function(x, pal, limits){
@@ -133,12 +136,12 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 
 	# Deal with possible zeros in 'vol' and 'pnc'. 
 	# The LISST SOP will give a 0 if concentration is below 0.001 ppm.
-	if(lty == 'vol' | lty == 'pnc') {
-		x <- lget(x, 'vol')
-		for(i in 1:lmodl$nring)
-			x[, i][which(drop_units(x[, i]) == 0)] <- 0.0005
-		x <- lget(x, lty)				
-	}
+#	if(lty == 'vol' | lty == 'pnc') {
+#		x <- lget(x, 'vol')
+#		for(i in 1:lmodl$nring)
+#			x[, i][which(drop_units(x[, i]) == 0)] <- 0.0005
+#		x <- lget(x, lty)				
+#	}
 
 	xm     <- do.call(rbind, x[, 1:lmodl$nring])
 	units(xm) <- units(x[, 1])
@@ -184,7 +187,9 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 		axis(1, at = axTicks(1) + 0.5, labels = xaxn[[2]][axTicks(1)])
 	}
 	xm   <- log10(drop_units(xm))
+	xm[abs(xm) == Inf] <- NA
 	xrst <- matrix(.map2color(xm, col), ncol = ncol(xm))[nrow(xm):1, ]
+	xrst[is.na(xrst)] <- '#000000' 
 	rasterImage(xrst, xleft = 1, ybottom = 1, xright = ncol(xm) + 1, ytop = lmodl$nring + 1, 
 		interpolate = F)
 

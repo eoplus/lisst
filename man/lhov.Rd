@@ -4,8 +4,8 @@
 \alias{lhov}
 \title{Hovmöller diagram for lisst objects}
 \usage{
-lhov(x, by = "sample", norm = TRUE, legend = TRUE, total = TRUE, col,
-  xlab, ylab, zlab, yu, zu)
+lhov(x, by = "sample", norm = TRUE, legend = TRUE, total = TRUE,
+  col, xlab, ylab, zlab, yu, zu)
 }
 \arguments{
 \item{x}{A lisst object.}

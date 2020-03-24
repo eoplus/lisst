@@ -7,7 +7,7 @@
 lgetvol(x)
 }
 \arguments{
-\item{x}{A lisst object of type 'pnc'.}
+\item{x}{A lisst object of type 'pnc' or 'csa'.}
 }
 \description{
 The function converts the PSD in particle concentration (particle/L/µm) back 
@@ -23,5 +23,6 @@ all.equal(l_vol, donkmeer_pro)
 }
 \seealso{
 \code{\link{lget}} \code{\link{lgetraw}}, \code{\link{lgetcor}}, 
-\code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetvol}}
+\code{\link{lgetcal}}, \code{\link{lgetvsf}}, \code{\link{lgetpnc}},
+\code{\link{lgetcsa}}
 }
