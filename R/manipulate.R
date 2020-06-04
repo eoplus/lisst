@@ -32,19 +32,22 @@
 #' @export
 
 c.lisst <- function(...) {
-	x   <- list(...)
-	for(i in 1:length(x)) {
-		if(!is.lisst(x[[i]])) stop(paste("Argument", i, "is not a lisst object"), call. = F)
-	}
-	typ <- attr(x[[1]], "type")
-	x   <- lapply(x, lget, type = typ)
-	for(i in 2:length(x)) {
-		if(!identical(.lattributes(x[[1]]), .lattributes(x[[i]])))
-			stop("Concatenation of lisst objects requires them to be from the same ",
-				"instrument/model and the same inversion type (if applicable)", 
-				call. = FALSE)
-	}
-	do.call(rbind, x)
+  x <- list(...)
+  for(i in 1:length(x)) {
+    if(!is.lisst(x[[i]]))
+      stop(paste("Argument", i, "is not a lisst object"), call. = F)
+  }
+
+  typ <- attr(x[[1]], "type")
+  x   <- lapply(x, lget, type = typ)
+  for(i in 2:length(x)) {
+    if(!identical(.lattributes(x[[1]]), .lattributes(x[[i]])))
+    stop("Concatenation of lisst objects requires them to be from the same ",
+      "instrument/model and the same inversion type (if applicable)", 
+      call. = FALSE)
+  }
+
+  do.call(rbind, x)
 }
 
 #' Subset lisst objects
@@ -62,7 +65,7 @@ c.lisst <- function(...) {
 #' @details Subseting can be done by sample index using a vector of integers, 
 #' by depth using a string of the form 'depth1|depth2', or by time using a time 
 #' object vector (e.g. POSIXct) or a caracter string in the format of ISO 8601.
-#' The time subsetting actully uses the xts subsetting functions, see 
+#' The time subsetting actually uses the xts subsetting functions, see 
 #' \code{?`[.xts`} for details.
 #'
 #' @examples
@@ -80,7 +83,6 @@ c.lisst <- function(...) {
 
 `[.lisst` <- function(x, i, j, ..., drop = TRUE) {
 	stopifnot(is.lisst(x))
-	lxts <- xts(rep(1, nrow(x)), order.by = ltime(x), unique = FALSE)
 	if(!missing(i)) {
 		if(is.character(i)) {
 			if(length(i) > 1) {
@@ -89,11 +91,13 @@ c.lisst <- function(...) {
 			} else if(length(grep("|", i, fixed = TRUE)) > 0) {
 				range <- as.numeric(unlist(strsplit(i, "|", fixed = TRUE)))
 				depth <- drop_units(x$Depth)
-				i <- which(depth >= range[1] & depth < range[2])
+				i     <- which(depth >= range[1] & depth < range[2])
 			} else {
+				lxts <- xts(rep(1, nrow(x)), order.by = ltime(x), unique = FALSE)
 				i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
 			}
 		} else if(xts::timeBased(i)) {
+ 			lxts <- xts(rep(1, nrow(x)), order.by = ltime(x), unique = FALSE)
 			i <- xts:::`[.xts`(lxts, i, which.i = TRUE)
 		}
 	}

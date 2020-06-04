@@ -58,6 +58,7 @@
 #'               will be used.
 #' @param yu     The units for the abscissa. See details.
 #' @param zu     The units for the magnitude values. See details.
+#' @param brks   Passed to lstat function. See ?lstat for details.
 #'
 #' @details
 #' The abscissa of the Hovmöller diagram will show the ring number if data is 
@@ -66,7 +67,7 @@
 #' 
 #' The z scale is provided in log10 for appropriate color mapping. However, 
 #' LISST SOP will return 0 volume concentration if concentration is below 0.001
-#' ppm. In that case, zeros as treated as half this minimul value, 0.0005 ppm 
+#' ppm. In that case, zeros as treated as half this minimum value, 0.0005 ppm 
 #' for ploting purposes only.
 #'
 #' If the lisst object is not regularly spaced in the chosen dimension, it will 
@@ -97,8 +98,8 @@
 #'
 #' @export
 
-lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col, xlab, ylab, 
-	zlab, yu, zu) {
+lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col, 
+        xlab, ylab, zlab, yu, zu, brks) {
 
 	lmodl  <- attr(x, "lmodl")
 	lty    <- attr(x, "type")
@@ -110,7 +111,6 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 	if(!missing(yu)) units(yaxn[[2]]) <- yu
 	if(missing(ylab)) ylab <- units::make_unit_label(yaxn[[1]], yaxn[[2]])
 	zaxn <- .zaxn(x)
-	if(!missing(zu)) xm <- set_units(xm, zu)
 	if(missing(zlab)) {
 		if(norm) zlab <- paste("Normalized", parse(text = zaxn))
 		else zlab <- units::make_unit_label(zaxn, x[, 1])
@@ -122,13 +122,18 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 	if(by == 'depth') {
 		if(diff(range(diff(drop_units(xaxn[[2]])))) != 0) {
 			warning('Bining irregular data', call. = F)
-			hx <- hist(drop_units(xaxn[[2]]), plot = F)
-			bx <- hx$breaks
-			bx <- c(bx[1], rep(bx[-c(1, length(bx))], each = 2), bx[length(bx)])
-			dim(bx) <- c(2, length(bx) / 2)
-			lx <- list()
-			for(i in 1:ncol(bx)) lx[[i]] <- paste(bx[, i], collapse = "|")
-			x <- lstat(x, brks = lx, 'mean')
+                        if(missing(brks)) {
+				hx <- hist(drop_units(xaxn[[2]]), plot = F)
+				bx <- hx$breaks
+				bx <- c(bx[1], rep(bx[-c(1, length(bx))], each = 2), bx[length(bx)])
+				dim(bx) <- c(2, length(bx) / 2)
+				brks <- list()
+				for(i in 1:ncol(bx)) brks[[i]] <- paste(bx[, i], collapse = "|")
+			} else {
+                                hx <- list()
+				hx$mids <- apply(sapply(sapply(brks, strsplit, split = "|", fixed = T), as.numeric), 2, mean)
+                        }
+			x <- lstat(x, brks = brks, 'mean')
 			units(hx$mids) <- units(xaxn[[2]])
 			xaxn[[2]] <- hx$mids
 		}
@@ -145,6 +150,7 @@ lhov <- function(x, by = 'sample', norm = TRUE, legend = TRUE, total = TRUE, col
 
 	xm     <- do.call(rbind, x[, 1:lmodl$nring])
 	units(xm) <- units(x[, 1])
+	if(!missing(zu)) xm <- set_units(xm, zu)
 
 	# Set device division:
 	if(legend && total) {

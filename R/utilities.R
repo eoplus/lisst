@@ -56,7 +56,12 @@ lity   <- function(x) {
 
 ltime <- function(x) {
 	stopifnot(is.lisst(x))
-	as.POSIXct(rownames(x))
+        rn <- rownames(x)
+	ms <- min(nchar(rn)[nchar(rn) > 20])
+        id <- which(nchar(rn) < 20)
+        rn[id] <- NA
+        rn <- substring(rn, 1, ms)
+	as.POSIXct(rn)
 }
 
 #' @describeIn metadata Extract reference measuring angles

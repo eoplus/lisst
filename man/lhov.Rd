@@ -4,8 +4,20 @@
 \alias{lhov}
 \title{Hovmöller diagram for lisst objects}
 \usage{
-lhov(x, by = "sample", norm = TRUE, legend = TRUE, total = TRUE,
-  col, xlab, ylab, zlab, yu, zu)
+lhov(
+  x,
+  by = "sample",
+  norm = TRUE,
+  legend = TRUE,
+  total = TRUE,
+  col,
+  xlab,
+  ylab,
+  zlab,
+  yu,
+  zu,
+  brks
+)
 }
 \arguments{
 \item{x}{A lisst object.}
@@ -26,6 +38,8 @@ will be used.}
 \item{yu}{The units for the abscissa. See details.}
 
 \item{zu}{The units for the magnitude values. See details.}
+
+\item{brks}{Passed to lstat function. See ?lstat for details.}
 }
 \description{
 Create Hovmöller diagram for lisst objects based on sample number, 
@@ -38,7 +52,7 @@ the lisst object type.
 
 The z scale is provided in log10 for appropriate color mapping. However, 
 LISST SOP will return 0 volume concentration if concentration is below 0.001
-ppm. In that case, zeros as treated as half this minimul value, 0.0005 ppm 
+ppm. In that case, zeros as treated as half this minimum value, 0.0005 ppm 
 for ploting purposes only.
 
 If the lisst object is not regularly spaced in the chosen dimension, it will 

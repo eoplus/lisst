@@ -101,7 +101,7 @@ A time indexing, with date/time in POSIX format is added to all created
 objects. If yr is missing when reading a LISST-100(X) file, the function will 
 'guess' its value, by acessing the file system modification date information. 
 The modification date is used to be consistent across platforms, since 
-UNIX-type systems do not register creation date. Still, those are expceted to 
+UNIX-type systems do not register creation date. Still, those are expected to 
 be equivalent since the files are not expected to be modified since their 
 creation by the LISST instrument (binary) or the LISST-SOP (processed). In 
 the case of binary file, the year will be then precise for the year of 

@@ -67,7 +67,7 @@
 #' objects. If yr is missing when reading a LISST-100(X) file, the function will 
 #' 'guess' its value, by acessing the file system modification date information. 
 #' The modification date is used to be consistent across platforms, since 
-#' UNIX-type systems do not register creation date. Still, those are expceted to 
+#' UNIX-type systems do not register creation date. Still, those are expected to 
 #' be equivalent since the files are not expected to be modified since their 
 #' creation by the LISST instrument (binary) or the LISST-SOP (processed). In 
 #' the case of binary file, the year will be then precise for the year of 
@@ -453,7 +453,7 @@ read_lisst <- function(fl, sn, pl, zscat, yr, out, model, tz = 'UTC', trant = TR
 # user tz options. It is not intended to be used directly, but called from
 # read_lisst function.
 #
-# param x    A lisst object.
+# param x     A lisst object.
 # param yr    The year of first measurement in the lisst object. Ignored for 
 #             LISST-200X.
 # param guess Logical. Is the yr passed a guess from read_lisst?
