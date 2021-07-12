@@ -313,7 +313,7 @@ plot.lisst <- function(lo, xu, type = "rings", ...) {
 		}
 	}
 	if(type == 'vol' || type == 'pnc' || type == 'psd') {
-		x <- lmodl$binr[[attr(lo, "lproc")]]
+		x <- lmodl$binr[[attr(lo, "lproc")$ity]]
 		if(!missing(xu)) units(x) <- xu
 		id <- which(as.numeric(lo[, 1]) == 0)
 		if((type == 'vol' && typ == 'pnc') || type == 'psd') lo <- lgetvol(lo)

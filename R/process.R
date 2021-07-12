@@ -22,7 +22,7 @@ lrings <- function(x, bins) {
 		stop(paste0('Maximum rings in LISST-', lmodl$mod, 
 			ifelse(linst$X, 'X', ''), " is ", lmodl$nring), 
 			call. = FALSE)
-	rs <- apply(as.matrix(x[, bins]), 1, sum, na.rm = T)
+	rs <- apply(as.matrix(x[, bins, drop = FALSE]), 1, sum, na.rm = T)
 	units(rs) <- units(x[, 1])
 	rs
 }
@@ -50,7 +50,7 @@ lfit <- function(x, model) {
 
 	bins  <- as.numeric(lmodl$binr[[lproc$ity]][, 3])
 	junge <- numeric(nrow(x))
-	mat   <- as.matrix(x[, 1:lmodl$nring])
+	mat   <- as.matrix(x[, 1:lmodl$nring, drop = F])
 	id    <- which(mat[, 1] != 0)
 	for(i in id) {
 		jfit <- lm(log10(mat[i, ])~log10(bins))
